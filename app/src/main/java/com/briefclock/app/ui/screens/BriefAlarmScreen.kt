@@ -6,14 +6,11 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -35,23 +32,20 @@ import com.briefclock.app.alarm.AlarmScheduler
 import com.briefclock.app.audio.AudioRecorderHelper
 import com.briefclock.app.data.BriefClockDatabase
 import com.briefclock.app.model.AlarmItem
+import com.briefclock.app.ui.components.FlipClock
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BriefAlarmScreen(
     context: Context = LocalContext.current,
     database: BriefClockDatabase,
-    audioRecorderHelper: AudioRecorderHelper
+    audioRecorderHelper: AudioRecorderHelper,
+    onOpenSettings: () -> Unit = {}
 ) {
     var alarms by remember { mutableStateOf(emptyList<AlarmItem>()) }
-    val coroutineScope = rememberCoroutineScope()
 
     fun refreshAlarms() {
         alarms = database.getAllAlarms()
@@ -106,71 +100,192 @@ fun BriefAlarmScreen(
     val infiniteTransition = rememberInfiniteTransition(label = "recordingPulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.25f,
+        targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
+            animation = tween(500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
     )
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    val cal = Calendar.getInstance()
-                    selectedHour = cal.get(Calendar.HOUR_OF_DAY)
-                    selectedMinute = (cal.get(Calendar.MINUTE) + 5) % 60
-                    alarmLabel = ""
-                    recordedFile = null
-                    showAddManualDialog = true
-                },
-                containerColor = Color(0xFFE53935),
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.alarm_add_regular))
-            }
-        }
-    ) { paddingValues ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
+                .padding(bottom = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            // Header Row: Title (Brief Alert), Subtitle, + Add Manual Alarm, Settings
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.alarm_screen_title),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = stringResource(R.string.alarm_screen_subtitle),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-            // Screen Header: Current Time Display
-            var currentTimeStr by remember { mutableStateOf("") }
-            LaunchedEffect(Unit) {
-                while (true) {
-                    currentTimeStr = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-                    delay(1000)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Manual Add Alarm Button (Moved here instead of FAB)
+                    IconButton(
+                        onClick = {
+                            val cal = Calendar.getInstance()
+                            selectedHour = cal.get(Calendar.HOUR_OF_DAY)
+                            selectedMinute = (cal.get(Calendar.MINUTE) + 5) % 60
+                            alarmLabel = ""
+                            recordedFile = null
+                            showAddManualDialog = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddCircle,
+                            contentDescription = stringResource(R.string.alarm_add_regular),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    // Settings Button
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
-            Text(
-                text = currentTimeStr,
-                fontSize = 44.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = stringResource(R.string.alarm_record_prompt),
-                fontSize = 13.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-            )
+            // Retro-Modern Flip Clock
+            FlipClock()
 
-            // Hold-to-Record Card Button
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isHoldingToRecord) Color(0xFFD32F2F) else Color(0xFF1E2228)
-                ),
-                shape = RoundedCornerShape(24.dp),
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Section Header: Active Alerts & Count
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.alarm_list_title),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                ) {
+                    Text(
+                        text = "${alarms.count { it.isEnabled }}/${alarms.size}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            // Alarms List
+            if (alarms.isEmpty()) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.alarm_no_alarms),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.alarm_record_prompt_hint),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(vertical = 6.dp)
+                ) {
+                    items(alarms, key = { it.id }) { alarm ->
+                        AlarmCard(
+                            alarm = alarm,
+                            onToggle = { isEnabled ->
+                                database.setAlarmEnabled(alarm.id, isEnabled)
+                                if (isEnabled) {
+                                    AlarmScheduler.scheduleAlarm(context, alarm)
+                                } else {
+                                    AlarmScheduler.cancelAlarm(context, alarm.id)
+                                }
+                                refreshAlarms()
+                            },
+                            onDelete = {
+                                AlarmScheduler.cancelAlarm(context, alarm.id)
+                                database.deleteAlarm(alarm.id)
+                                refreshAlarms()
+                            },
+                            onPlayVoice = {
+                                val path = alarm.audioPath
+                                if (!path.isNullOrEmpty()) {
+                                    audioRecorderHelper.previewAudio(File(path))
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Bottom Capsule-Shaped Record Button (Hold to Record Voice Alarm)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 12.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(percent = 50),
+                color = if (isHoldingToRecord) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                shadowElevation = if (isHoldingToRecord) 10.dp else 4.dp,
+                modifier = Modifier
+                    .scale(if (isHoldingToRecord) pulseScale else 1f)
+                    .height(54.dp)
+                    .widthIn(min = 240.dp)
                     .pointerInput(hasRecordAudioPermission) {
                         detectTapGestures(
                             onPress = {
@@ -202,124 +317,55 @@ fun BriefAlarmScreen(
                     }
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(54.dp)
-                            .scale(if (isHoldingToRecord) pulseScale else 1f)
-                            .background(
-                                color = if (isHoldingToRecord) Color.White else Color(0xFFE53935),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Icon(
-                            imageVector = com.briefclock.app.ui.components.AppIcons.Mic,
-                            contentDescription = null,
-                            tint = if (isHoldingToRecord) Color(0xFFE53935) else Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column {
-                        Text(
-                            text = if (isHoldingToRecord) {
-                                "${stringResource(R.string.alarm_recording)} (${recordingDurationSec}s)"
-                            } else {
-                                stringResource(R.string.alarm_hold_to_record)
-                            },
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
-                            color = Color.White
-                        )
-                        Text(
-                            text = if (isHoldingToRecord) "● REC" else "Release to set alarm ringtone",
-                            fontSize = 12.sp,
-                            color = if (isHoldingToRecord) Color(0xFFFFCDD2) else Color.LightGray
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Alarm List
-            if (alarms.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.alarm_no_alarms),
-                        color = Color.Gray,
-                        fontSize = 14.sp
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(alarms, key = { it.id }) { alarm ->
-                        AlarmCard(
-                            alarm = alarm,
-                            onToggle = { isEnabled ->
-                                database.setAlarmEnabled(alarm.id, isEnabled)
-                                if (isEnabled) {
-                                    AlarmScheduler.scheduleAlarm(context, alarm)
-                                } else {
-                                    AlarmScheduler.cancelAlarm(context, alarm.id)
-                                }
-                                refreshAlarms()
-                            },
-                            onDelete = {
-                                AlarmScheduler.cancelAlarm(context, alarm.id)
-                                database.deleteAlarm(alarm.id)
-                                refreshAlarms()
-                            },
-                            onPlayVoice = {
-                                if (!alarm.audioPath.isNullOrEmpty()) {
-                                    val f = File(alarm.audioPath)
-                                    if (audioRecorderHelper.isPlaying()) {
-                                        audioRecorderHelper.stopPreview()
-                                    } else {
-                                        audioRecorderHelper.previewAudio(f)
-                                    }
-                                }
-                            }
-                        )
-                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Text(
+                        text = if (isHoldingToRecord) {
+                            "${stringResource(R.string.alarm_recording)} ${recordingDurationSec}s..."
+                        } else {
+                            stringResource(R.string.alarm_hold_to_record_capsule)
+                        },
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
                 }
             }
         }
     }
 
-    // Set Voice Alarm Dialog
+    // Voice Quick-Set Dialog
     if (showSetDialog && recordedFile != null) {
         AlertDialog(
             onDismissRequest = {
                 audioRecorderHelper.stopPreview()
+                isPreviewPlaying = false
                 showSetDialog = false
             },
             title = {
-                Text(stringResource(R.string.alarm_quick_set_title), fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(R.string.alarm_quick_set_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
             },
             text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    // Audio preview player & re-record
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF262B33)),
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Voice preview card
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -329,48 +375,50 @@ fun BriefAlarmScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            TextButton(
-                                onClick = {
-                                    if (isPreviewPlaying) {
-                                        audioRecorderHelper.stopPreview()
-                                        isPreviewPlaying = false
-                                    } else {
-                                        isPreviewPlaying = true
-                                        audioRecorderHelper.previewAudio(recordedFile!!) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = {
+                                        if (isPreviewPlaying) {
+                                            audioRecorderHelper.stopPreview()
                                             isPreviewPlaying = false
+                                        } else {
+                                            audioRecorderHelper.previewAudio(recordedFile!!) {
+                                                isPreviewPlaying = false
+                                            }
+                                            isPreviewPlaying = true
                                         }
                                     }
+                                ) {
+                                    Icon(
+                                        if (isPreviewPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                                        contentDescription = "Preview",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = if (isPreviewPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
-                                    contentDescription = null
+                                Text(
+                                    text = "${stringResource(R.string.alarm_recording)} (${recordingDurationSec}s)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(if (isPreviewPlaying) stringResource(R.string.alarm_stop_preview) else stringResource(R.string.alarm_preview_voice))
                             }
 
                             TextButton(
                                 onClick = {
                                     audioRecorderHelper.stopPreview()
                                     isPreviewPlaying = false
+                                    recordedFile?.delete()
+                                    recordedFile = null
                                     showSetDialog = false
                                 }
                             ) {
-                                Text(stringResource(R.string.alarm_rerecord), color = Color(0xFFFF8A80))
+                                Text(stringResource(R.string.alarm_rerecord), color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Time Picker (Hour & Minute Steppers)
-                    Text(
-                        stringResource(R.string.alarm_time),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     TimeSelectorRow(
                         hour = selectedHour,
                         minute = selectedMinute,
@@ -380,16 +428,15 @@ fun BriefAlarmScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Label
                     OutlinedTextField(
                         value = alarmLabel,
                         onValueChange = { alarmLabel = it },
-                        label = { Text(stringResource(R.string.alarm_label)) },
-                        placeholder = { Text(stringResource(R.string.alarm_label_hint)) },
+                        label = { Text(stringResource(R.string.alarm_label_hint)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             },
@@ -397,7 +444,9 @@ fun BriefAlarmScreen(
                 Button(
                     onClick = {
                         audioRecorderHelper.stopPreview()
-                        val newAlarm = AlarmItem(
+                        isPreviewPlaying = false
+
+                        val item = AlarmItem(
                             hour = selectedHour,
                             minute = selectedMinute,
                             label = alarmLabel.ifEmpty { context.getString(R.string.alarm_voice_tag) },
@@ -405,22 +454,25 @@ fun BriefAlarmScreen(
                             audioPath = recordedFile?.absolutePath,
                             isSystemAlarm = true
                         )
-                        val id = database.insertAlarm(newAlarm)
-                        val inserted = newAlarm.copy(id = id)
-                        AlarmScheduler.scheduleAlarm(context, inserted)
-                        Toast.makeText(context, R.string.alarm_system_invoked, Toast.LENGTH_SHORT).show()
+
+                        val id = database.insertAlarm(item)
+                        val insertedItem = item.copy(id = id)
+
+                        AlarmScheduler.scheduleAlarm(context, insertedItem)
                         refreshAlarms()
                         showSetDialog = false
+                        Toast.makeText(context, R.string.alarm_saved_success, Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(stringResource(R.string.alarm_save), color = Color.White)
+                    Text(stringResource(R.string.alarm_save), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = {
                         audioRecorderHelper.stopPreview()
+                        isPreviewPlaying = false
                         showSetDialog = false
                     }
                 ) {
@@ -430,19 +482,19 @@ fun BriefAlarmScreen(
         )
     }
 
-    // Manual Add Dialog
+    // Regular Add Alarm Dialog
     if (showAddManualDialog) {
         AlertDialog(
             onDismissRequest = { showAddManualDialog = false },
-            title = { Text(stringResource(R.string.alarm_add_regular), fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    text = stringResource(R.string.alarm_add_regular),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
             text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        stringResource(R.string.alarm_time),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     TimeSelectorRow(
                         hour = selectedHour,
                         minute = selectedMinute,
@@ -452,22 +504,22 @@ fun BriefAlarmScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     OutlinedTextField(
                         value = alarmLabel,
                         onValueChange = { alarmLabel = it },
-                        label = { Text(stringResource(R.string.alarm_label)) },
-                        placeholder = { Text(stringResource(R.string.alarm_label_hint)) },
+                        label = { Text(stringResource(R.string.alarm_label_hint)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val newAlarm = AlarmItem(
+                        val item = AlarmItem(
                             hour = selectedHour,
                             minute = selectedMinute,
                             label = alarmLabel.ifEmpty { context.getString(R.string.alarm_title) },
@@ -475,16 +527,18 @@ fun BriefAlarmScreen(
                             audioPath = null,
                             isSystemAlarm = true
                         )
-                        val id = database.insertAlarm(newAlarm)
-                        val inserted = newAlarm.copy(id = id)
-                        AlarmScheduler.scheduleAlarm(context, inserted)
-                        Toast.makeText(context, R.string.alarm_system_invoked, Toast.LENGTH_SHORT).show()
+
+                        val id = database.insertAlarm(item)
+                        val insertedItem = item.copy(id = id)
+
+                        AlarmScheduler.scheduleAlarm(context, insertedItem)
                         refreshAlarms()
                         showAddManualDialog = false
+                        Toast.makeText(context, R.string.alarm_saved_success, Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(stringResource(R.string.alarm_save), color = Color.White)
+                    Text(stringResource(R.string.alarm_save), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -503,15 +557,16 @@ private fun AlarmCard(
     onDelete: () -> Unit,
     onPlayVoice: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2228)),
-        shape = RoundedCornerShape(16.dp),
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -520,7 +575,7 @@ private fun AlarmCard(
                     text = alarm.formattedTime,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (alarm.isEnabled) Color.White else Color.Gray
+                    color = if (alarm.isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
 
                 Row(
@@ -529,8 +584,8 @@ private fun AlarmCard(
                 ) {
                     Text(
                         text = alarm.label.ifEmpty { stringResource(R.string.alarm_title) },
-                        fontSize = 14.sp,
-                        color = Color.LightGray
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     if (alarm.isVoiceAlarm) {
@@ -544,7 +599,8 @@ private fun AlarmCard(
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp)
                                 )
-                            }
+                            },
+                            shape = RoundedCornerShape(8.dp)
                         )
                     }
                 }
@@ -555,8 +611,8 @@ private fun AlarmCard(
                     checked = alarm.isEnabled,
                     onCheckedChange = onToggle,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = Color(0xFFE53935)
+                        checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary
                     )
                 )
 
@@ -564,7 +620,7 @@ private fun AlarmCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = stringResource(R.string.alarm_delete),
-                        tint = Color(0xFF888888)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -590,9 +646,9 @@ private fun TimeSelectorRow(
             }
             Text(
                 text = String.format("%02d", hour),
-                fontSize = 30.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(onClick = { onTimeChange((hour + 23) % 24, minute) }) {
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Hour Down")
@@ -601,10 +657,10 @@ private fun TimeSelectorRow(
 
         Text(
             text = ":",
-            fontSize = 30.sp,
+            fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 14.dp)
         )
 
         // Minute Stepper
@@ -614,9 +670,9 @@ private fun TimeSelectorRow(
             }
             Text(
                 text = String.format("%02d", minute),
-                fontSize = 30.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             IconButton(onClick = { onTimeChange(hour, (minute + 59) % 60) }) {
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Minute Down")

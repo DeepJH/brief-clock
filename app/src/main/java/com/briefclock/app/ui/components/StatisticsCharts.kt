@@ -32,10 +32,14 @@ fun SurvivalRateDonutChart(
     val total = successCount + failCount
     val animatedProgress = remember { Animatable(0f) }
 
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val failColor = MaterialTheme.colorScheme.error
+    val successColor = Color(0xFF10B981)
+
     LaunchedEffect(winRate) {
         animatedProgress.animateTo(
             targetValue = if (total > 0) winRate / 100f else 0f,
-            animationSpec = tween(1000)
+            animationSpec = tween(900)
         )
     }
 
@@ -44,14 +48,14 @@ fun SurvivalRateDonutChart(
         modifier = modifier.size(150.dp)
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-            val strokeWidth = 18.dp.toPx()
+            val strokeWidth = 16.dp.toPx()
             val diameter = size.minDimension - strokeWidth
             val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
             val arcSize = Size(diameter, diameter)
 
             // Background track
             drawArc(
-                color = Color(0xFF2A2E33),
+                color = trackColor,
                 startAngle = 0f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -61,9 +65,9 @@ fun SurvivalRateDonutChart(
             )
 
             if (total > 0) {
-                // Fail segment (red)
+                // Fail segment
                 drawArc(
-                    color = Color(0xFFE53935),
+                    color = failColor,
                     startAngle = -90f,
                     sweepAngle = 360f,
                     useCenter = false,
@@ -72,11 +76,11 @@ fun SurvivalRateDonutChart(
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
 
-                // Win segment (green)
+                // Win segment
                 val successSweep = 360f * animatedProgress.value
                 if (successSweep > 0f) {
                     drawArc(
-                        color = Color(0xFF00E676),
+                        color = successColor,
                         startAngle = -90f,
                         sweepAngle = successSweep,
                         useCenter = false,
@@ -92,13 +96,13 @@ fun SurvivalRateDonutChart(
             Text(
                 text = if (total > 0) "${(animatedProgress.value * 100).toInt()}%" else "--",
                 fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (total > 0 && winRate >= 50f) Color(0xFF00E676) else Color(0xFFFF5252)
+                fontWeight = FontWeight.ExtraBold,
+                color = if (total > 0 && winRate >= 50f) successColor else failColor
             )
             Text(
                 text = "$successCount / $total",
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -113,6 +117,11 @@ fun WeeklyNapBarChart(
 
     val maxMinutes = (dailyData.maxOfOrNull { it.totalMinutes } ?: 0).coerceAtLeast(30)
     val animatedFraction = remember { Animatable(0f) }
+
+    val baselineColor = MaterialTheme.colorScheme.outlineVariant
+    val emptyBarColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val failColor = MaterialTheme.colorScheme.error
+    val successColor = Color(0xFF10B981)
 
     LaunchedEffect(dailyData) {
         animatedFraction.animateTo(1f, animationSpec = tween(900))
@@ -129,9 +138,9 @@ fun WeeklyNapBarChart(
         val bottomY = height - 28.dp.toPx()
         val chartHeight = bottomY - 24.dp.toPx()
 
-        // Draw baseline
+        // Baseline
         drawLine(
-            color = Color(0xFF374151),
+            color = baselineColor,
             start = Offset(0f, bottomY),
             end = Offset(width, bottomY),
             strokeWidth = 1.5f
@@ -147,9 +156,9 @@ fun WeeklyNapBarChart(
             val barTop = bottomY - barHeight
 
             val barColor = when {
-                day.totalMinutes == 0 -> Color(0xFF262A30)
-                day.failCount > 0 -> Color(0xFFFF5252)
-                else -> Color(0xFF00E676)
+                day.totalMinutes == 0 -> emptyBarColor
+                day.failCount > 0 -> failColor
+                else -> successColor
             }
 
             // Draw bar
@@ -162,7 +171,7 @@ fun WeeklyNapBarChart(
                 )
             }
 
-            // Draw text using native android Canvas paint
+            // Date label below bar
             val paint = android.graphics.Paint().apply {
                 color = android.graphics.Color.GRAY
                 textSize = 10.sp.toPx()
@@ -170,7 +179,6 @@ fun WeeklyNapBarChart(
                 isAntiAlias = true
             }
 
-            // Date label below bar
             drawContext.canvas.nativeCanvas.drawText(
                 day.dateLabel,
                 centerX,
@@ -181,7 +189,7 @@ fun WeeklyNapBarChart(
             // Value text above bar if > 0
             if (day.totalMinutes > 0 && animatedFraction.value > 0.8f) {
                 val valuePaint = android.graphics.Paint().apply {
-                    color = android.graphics.Color.WHITE
+                    color = android.graphics.Color.DKGRAY
                     textSize = 10.sp.toPx()
                     textAlign = android.graphics.Paint.Align.CENTER
                     isAntiAlias = true

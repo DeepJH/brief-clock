@@ -2,28 +2,34 @@
     <string name="app_name">Brief Clock</string>
 
     <!-- Navigation -->
-    <string name="nav_alarm">Brief Alarm</string>
+    <string name="nav_alarm">Brief Alert</string>
     <string name="nav_roulette">Nap Roulette</string>
     <string name="nav_statistics">Statistics</string>
 
-    <!-- Brief Alarm -->
-    <string name="alarm_title">Brief Alarm</string>
-    <string name="alarm_hold_to_record">Hold to Record Voice Alarm</string>
+    <!-- Brief Alert -->
+    <string name="alarm_title">Brief Alert</string>
+    <string name="alarm_screen_title">Brief Alert</string>
+    <string name="alarm_screen_subtitle">Voice-scheduled smart alarms</string>
+    <string name="alarm_hold_to_record_capsule">Hold to Record Alert</string>
+    <string name="alarm_hold_to_record">Hold to Record Voice Alert</string>
     <string name="alarm_recording">Recording… Release to set</string>
-    <string name="alarm_record_prompt">Press and hold the button below to record your custom wake-up message</string>
-    <string name="alarm_quick_set_title">Set Voice Alarm</string>
+    <string name="alarm_record_prompt">Press and hold the capsule below to record your custom wake-up message</string>
+    <string name="alarm_record_prompt_hint">Hold the capsule button below to record.</string>
+    <string name="alarm_list_title">Active Alerts</string>
+    <string name="alarm_quick_set_title">Set Voice Alert</string>
     <string name="alarm_preview_voice">Preview Voice</string>
     <string name="alarm_stop_preview">Stop Preview</string>
     <string name="alarm_rerecord">Re-record</string>
     <string name="alarm_time">Alarm Time</string>
     <string name="alarm_label">Label</string>
     <string name="alarm_label_hint">e.g. Morning Briefing, Medicine</string>
-    <string name="alarm_save">Save Alarm</string>
+    <string name="alarm_save">Save Alert</string>
     <string name="alarm_cancel">Cancel</string>
     <string name="alarm_delete">Delete</string>
     <string name="alarm_voice_tag">Voice Ringtone</string>
-    <string name="alarm_no_alarms">No alarms set. Hold the mic button above or tap + to create one.</string>
-    <string name="alarm_add_regular">Add Alarm</string>
+    <string name="alarm_no_alarms">No alerts set yet.</string>
+    <string name="alarm_add_regular">Add Alert</string>
+    <string name="alarm_saved_success">Alert scheduled</string>
     <string name="alarm_system_invoked">System Alarm Clock invoked</string>
     <string name="alarm_permission_record">Microphone permission is required to record voice alarms.</string>
     <string name="alarm_permission_grant">Grant Permission</string>
@@ -37,39 +43,52 @@
 
     <!-- Nap Roulette -->
     <string name="roulette_title">Nap Roulette</string>
-    <string name="roulette_subtitle">Set target nap time. Gamble whether you can sleep the full duration!</string>
-    <string name="roulette_rule_tip">Rule: Stop sleeping before time is up = DEFEAT (Shot!). Finish after time is up = VICTORY (Survived!).</string>
-    <string name="roulette_start">Start Gamble (Sleep)</string>
+    <string name="roulette_subtitle">Set nap target. Gamble your discipline!</string>
+    <string name="roulette_rules_title">Nap Roulette Rules</string>
+    <string name="roulette_rules_content">1. Choose your target nap duration with the roller.\n2. Tap \'Start Gamble\' and relax to sleep.\n3. When you wake up, pull the trigger:\n   • Slept full duration or more: Click! Empty chamber, you survived!\n   • Woke up prematurely: BANG! Gunshot! Challenge failed.</string>
+    <string name="roulette_start">Start Gamble</string>
     <string name="roulette_sleeping">Sleeping… Don\'t wake up early!</string>
-    <string name="roulette_wake_up">Wake Up / End Nap</string>
+    <string name="roulette_wake_up">Wake Up / Pull Trigger</string>
     <string name="roulette_target_time">Target Nap Time</string>
     <string name="roulette_elapsed_time">Elapsed Time</string>
     <string name="roulette_remaining_time">Remaining Time</string>
-    <string name="roulette_overtime">Target Completed!</string>
+    <string name="roulette_overtime">Target Reached!</string>
     <string name="roulette_min">%d min</string>
     <string name="roulette_sec">%d sec</string>
-    <string name="roulette_test_mode">Test Mode (10s)</string>
-    <string name="roulette_result_win_title">Survived! Victory!</string>
-    <string name="roulette_result_win_desc">Click! The chamber was empty. You slept the full %s! Challenge passed.</string>
-    <string name="roulette_result_fail_title">Bang! Defeated!</string>
-    <string name="roulette_result_fail_desc">You woke up too early! Only slept %1$s of target %2$s. Shot down!</string>
+    <string name="roulette_survived_desc">Chamber was empty! You survived the nap challenge.</string>
+    <string name="roulette_shot_desc">Woke up too early! BANG! Challenge failed.</string>
     <string name="roulette_play_again">Play Again</string>
 
     <!-- Statistics -->
-    <string name="stats_title">Nap Roulette Statistics</string>
+    <string name="stats_title">Statistics</string>
+    <string name="stats_subtitle">Nap discipline &amp; challenge history</string>
     <string name="stats_survival_rate">Survival Rate</string>
     <string name="stats_total_games">Total Games</string>
-    <string name="stats_survived">Survived (Wins)</string>
-    <string name="stats_shot">Shot (Losses)</string>
+    <string name="stats_survived">Survived</string>
+    <string name="stats_shot">Shot Down</string>
     <string name="stats_total_duration">Total Nap Time</string>
     <string name="stats_avg_duration">Average Nap Time</string>
+    <string name="stats_total_sleep">Total Sleep</string>
+    <string name="stats_avg_sleep">Avg Sleep</string>
     <string name="stats_current_streak">Current Streak</string>
     <string name="stats_best_streak">Best Streak</string>
-    <string name="stats_chart_title">Last 7 Days Nap Activity (Minutes)</string>
-    <string name="stats_chart_empty">No nap data yet. Play a round in Nap Roulette!</string>
+    <string name="stats_7day_chart">Last 7 Days Activity</string>
     <string name="stats_recent_history">Recent Games</string>
+    <string name="stats_target">Target</string>
+    <string name="stats_actual">Actual</string>
     <string name="stats_clear_all">Clear History</string>
-    <string name="stats_clear_confirm">Are you sure you want to clear all nap statistics?</string>
-    <string name="stats_confirm">Confirm</string>
-    <string name="stats_no_history">No history yet.</string>
+    <string name="stats_clear_title">Clear History</string>
+    <string name="stats_clear_message">Are you sure you want to clear all nap roulette records?</string>
+    <string name="stats_clear_confirm">Clear All</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Preferences</string>
+    <string name="settings_theme_color">Theme Primary Color</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_mode_system">System</string>
+    <string name="settings_mode_light">Light</string>
+    <string name="settings_mode_dark">Dark</string>
+    <string name="settings_language">App Language</string>
+    <string name="settings_lang_system">System</string>
+    <string name="settings_done">Done</string>
 </resources>

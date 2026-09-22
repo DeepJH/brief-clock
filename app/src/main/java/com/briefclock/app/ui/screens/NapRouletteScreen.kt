@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -18,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.briefclock.app.R
@@ -26,6 +26,7 @@ import com.briefclock.app.audio.SoundEffects
 import com.briefclock.app.data.BriefClockDatabase
 import com.briefclock.app.model.NapRecord
 import com.briefclock.app.ui.components.RevolverCanvas
+import com.briefclock.app.ui.components.VerticalDurationWheelPicker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -49,6 +50,7 @@ fun NapRouletteScreen(
     var triggerPulled by remember { mutableStateOf(false) }
     var muzzleFlash by remember { mutableStateOf(false) }
 
+    var showRulesDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     // Timer while sleeping
@@ -67,97 +69,85 @@ fun NapRouletteScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(16.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Title & Subtitle
-        Text(
-            text = stringResource(R.string.roulette_title),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Text(
-            text = stringResource(R.string.roulette_rule_tip),
-            fontSize = 12.sp,
-            color = Color(0xFFFFB74D),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 2.5D Revolver Canvas Component
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF16191D)),
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth()
+        // Screen Header: Nap Roulette (English original name) + Rules Info Button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp)
-            ) {
-                RevolverCanvas(
-                    cylinderAngle = cylinderAngleAnim.value,
-                    hammerCocked = hammerCocked,
-                    triggerPulled = triggerPulled,
-                    recoilAmount = recoilAnim.value,
-                    muzzleFlash = muzzleFlash
+            Column {
+                Text(
+                    text = stringResource(R.string.roulette_title),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = stringResource(R.string.roulette_subtitle),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(onClick = { showRulesDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = stringResource(R.string.roulette_rules_title),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 3D Unshaded Revolver Canvas (Directly on screen, NO enclosing box/card)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            RevolverCanvas(
+                cylinderAngle = cylinderAngleAnim.value,
+                hammerCocked = hammerCocked,
+                triggerPulled = triggerPulled,
+                recoilAmount = recoilAnim.value,
+                muzzleFlash = muzzleFlash
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Dynamic State UI
         when (session.gameState) {
             RouletteState.IDLE -> {
-                // Time Duration Selector Chips
                 Text(
                     text = stringResource(R.string.roulette_target_time),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.LightGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    val presets = listOf(
-                        10 to stringResource(R.string.roulette_test_mode), // 10s for fast test
-                        15 * 60 to "15m",
-                        20 * 60 to "20m",
-                        30 * 60 to "30m",
-                        45 * 60 to "45m"
-                    )
+                // Vertical Duration Drum/Wheel Picker
+                VerticalDurationWheelPicker(
+                    selectedSeconds = session.targetDurationSec,
+                    onDurationSelected = { sec ->
+                        session.targetDurationSec = sec
+                        session.selectedChipSec = sec
+                    },
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
 
-                    presets.forEach { (sec, label) ->
-                        FilterChip(
-                            selected = session.selectedChipSec == sec,
-                            onClick = {
-                                session.selectedChipSec = sec
-                                session.targetDurationSec = sec
-                            },
-                            label = { Text(label, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFE53935),
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Start Gamble Button
+                // Start Gamble Button (Capsule shaped, primary theme color)
                 Button(
                     onClick = {
                         coroutineScope.launch {
@@ -179,27 +169,28 @@ fun NapRouletteScreen(
                             session.gameState = RouletteState.SLEEPING
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)),
-                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(percent = 50),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                        .fillMaxWidth(0.85f)
+                        .height(54.dp)
                 ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.roulette_start),
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
 
             RouletteState.SLEEPING -> {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E232A)),
-                    shape = RoundedCornerShape(18.dp),
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -210,19 +201,19 @@ fun NapRouletteScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.roulette_sleeping),
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFFB74D)
+                            color = MaterialTheme.colorScheme.primary
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         // Elapsed Time display
                         Text(
                             text = formatDuration(session.elapsedSec),
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            fontSize = 46.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         val remaining = (session.targetDurationSec - session.elapsedSec).coerceAtLeast(0)
@@ -233,151 +224,66 @@ fun NapRouletteScreen(
                                 stringResource(R.string.roulette_overtime)
                             },
                             fontSize = 14.sp,
-                            color = if (remaining > 0) Color.LightGray else Color(0xFF00E676),
-                            fontWeight = FontWeight.Medium
+                            color = if (remaining > 0) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF10B981),
+                            fontWeight = FontWeight.SemiBold
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                        // Progress Bar
-                        val progress = (session.elapsedSec.toFloat() / session.targetDurationSec).coerceIn(0f, 1f)
-                        LinearProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp),
-                            color = if (progress >= 1f) Color(0xFF00E676) else Color(0xFFE53935),
-                            trackColor = Color(0xFF374151),
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Wake Up / End Nap Button
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            val actual = ((System.currentTimeMillis() - session.startTimeMs) / 1000).toInt()
-                            session.lastActualDurationSec = actual
-                            val isSuccess = actual >= session.targetDurationSec
-                            session.lastResultSuccess = isSuccess
-
-                            // Pull trigger
-                            triggerPulled = true
-                            hammerCocked = false
-
-                            if (isSuccess) {
-                                // CLICK! Empty chamber -> Survived
-                                SoundEffects.playTriggerClick(context)
-                                cylinderAngleAnim.animateTo(cylinderAngleAnim.value + 60f, tween(150))
-                            } else {
-                                // BANG! Gunfire -> Defeated
-                                SoundEffects.playGunshot(context)
-                                muzzleFlash = true
-                                recoilAnim.animateTo(1f, tween(50))
-                                recoilAnim.animateTo(0f, tween(300))
-                                delay(120)
-                                muzzleFlash = false
-                            }
-
-                            // Save to database
-                            database.insertNapRecord(
-                                NapRecord(
-                                    targetDurationSec = session.targetDurationSec,
-                                    actualDurationSec = actual,
-                                    isSuccess = isSuccess,
-                                    timestamp = System.currentTimeMillis()
-                                )
-                            )
-                            onStatsUpdated()
-
-                            session.gameState = RouletteState.RESULT
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (session.elapsedSec >= session.targetDurationSec) Color(0xFF00E676) else Color(0xFFE53935)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.roulette_wake_up),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-
-            RouletteState.RESULT -> {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (session.lastResultSuccess) Color(0xFF1B382B) else Color(0xFF3E1E1E)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = if (session.lastResultSuccess) {
-                                stringResource(R.string.roulette_result_win_title)
-                            } else {
-                                stringResource(R.string.roulette_result_fail_title)
-                            },
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (session.lastResultSuccess) Color(0xFF00E676) else Color(0xFFFF5252)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = if (session.lastResultSuccess) {
-                                context.getString(
-                                    R.string.roulette_result_win_desc,
-                                    formatDuration(session.targetDurationSec)
-                                )
-                            } else {
-                                context.getString(
-                                    R.string.roulette_result_fail_desc,
-                                    formatDuration(session.lastActualDurationSec),
-                                    formatDuration(session.targetDurationSec)
-                                )
-                            },
-                            fontSize = 15.sp,
-                            textAlign = TextAlign.Center,
-                            color = Color.White
-                        )
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
+                        // Wake Up / Pull Trigger Button
                         Button(
                             onClick = {
-                                triggerPulled = false
-                                hammerCocked = false
-                                muzzleFlash = false
-                                session.gameState = RouletteState.IDLE
+                                coroutineScope.launch {
+                                    triggerPulled = true
+                                    delay(40)
+
+                                    val isSuccess = session.elapsedSec >= session.targetDurationSec
+                                    session.lastResultSuccess = isSuccess
+
+                                    if (isSuccess) {
+                                        // Empty Chamber Click
+                                        SoundEffects.playTriggerClick(context)
+                                        hammerCocked = false
+                                    } else {
+                                        // BANG! Gunshot & Recoil
+                                        SoundEffects.playGunshot(context)
+                                        muzzleFlash = true
+                                        hammerCocked = false
+
+                                        // Recoil kickback animation
+                                        recoilAnim.animateTo(1f, tween(60))
+                                        recoilAnim.animateTo(0f, tween(250))
+                                        muzzleFlash = false
+                                    }
+
+                                    // Record to Database
+                                    val record = NapRecord(
+                                        targetDurationSec = session.targetDurationSec,
+                                        actualDurationSec = session.elapsedSec,
+                                        isSuccess = isSuccess,
+                                        timestamp = System.currentTimeMillis()
+                                    )
+                                    database.insertNapRecord(record)
+                                    onStatsUpdated()
+
+                                    session.gameState = RouletteState.RESULT
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (session.lastResultSuccess) Color(0xFF00E676) else Color(0xFFE53935)
+                                containerColor = if (session.elapsedSec >= session.targetDurationSec) {
+                                    Color(0xFF10B981)
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
                             ),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(percent = 50),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
+                                .height(52.dp)
                         ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = stringResource(R.string.roulette_play_again),
+                                text = stringResource(R.string.roulette_wake_up),
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -385,7 +291,132 @@ fun NapRouletteScreen(
                     }
                 }
             }
+
+            RouletteState.RESULT -> {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val survived = session.lastResultSuccess
+
+                        Text(
+                            text = if (survived) "💥 CLICK!" else "🔥 BANG!",
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (survived) Color(0xFF10B981) else MaterialTheme.colorScheme.error
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = if (survived) {
+                                stringResource(R.string.roulette_survived_desc)
+                            } else {
+                                stringResource(R.string.roulette_shot_desc)
+                            },
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Stats Summary Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    stringResource(R.string.stats_target),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    formatDuration(session.targetDurationSec),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    stringResource(R.string.stats_actual),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    formatDuration(session.elapsedSec),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (survived) Color(0xFF10B981) else MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Play Again Button
+                        Button(
+                            onClick = {
+                                hammerCocked = false
+                                triggerPulled = false
+                                muzzleFlash = false
+                                session.gameState = RouletteState.IDLE
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(percent = 50),
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(50.dp)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                stringResource(R.string.roulette_play_again),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    // Rules Info Popup Dialog
+    if (showRulesDialog) {
+        AlertDialog(
+            onDismissRequest = { showRulesDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.roulette_rules_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.roulette_rules_content),
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showRulesDialog = false }) {
+                    Text(stringResource(R.string.settings_done), fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }
 

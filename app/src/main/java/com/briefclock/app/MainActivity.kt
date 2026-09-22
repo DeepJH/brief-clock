@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -17,17 +18,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.briefclock.app.audio.AudioRecorderHelper
 import com.briefclock.app.data.BriefClockDatabase
 import com.briefclock.app.ui.components.AppIcons
+import com.briefclock.app.ui.components.SettingsDialog
 import com.briefclock.app.ui.screens.BriefAlarmScreen
 import com.briefclock.app.ui.screens.NapRouletteScreen
 import com.briefclock.app.ui.screens.NapRouletteSession
 import com.briefclock.app.ui.screens.StatisticsScreen
+import com.briefclock.app.ui.theme.AppLanguage
 import com.briefclock.app.ui.theme.BriefClockTheme
+import com.briefclock.app.ui.theme.ThemeColor
+import com.briefclock.app.ui.theme.ThemeMode
+import com.briefclock.app.ui.theme.ThemePreferences
 
 enum class BottomTab(val index: Int) {
     ALARM(0),
@@ -39,122 +46,163 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var database: BriefClockDatabase
     private lateinit var audioRecorderHelper: AudioRecorderHelper
+    private lateinit var themePreferences: ThemePreferences
     private val rouletteSession = NapRouletteSession()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         database = BriefClockDatabase.getInstance(this)
         audioRecorderHelper = AudioRecorderHelper(this)
+        themePreferences = ThemePreferences(this)
 
         setContent {
-            BriefClockTheme {
-                val context = LocalContext.current
-                var selectedTab by remember { mutableStateOf(BottomTab.ALARM) }
+            var themeMode by remember { mutableStateOf(themePreferences.themeMode) }
+            var themeColor by remember { mutableStateOf(themePreferences.themeColor) }
+            var appLanguage by remember { mutableStateOf(themePreferences.language) }
+            var showSettingsDialog by remember { mutableStateOf(false) }
 
-                // Request notification permission for Android 13+
-                val notificationPermissionLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.RequestPermission()
-                ) {}
+            val localizedContext = remember(appLanguage) {
+                themePreferences.getLocalizedContext(this@MainActivity)
+            }
 
-                LaunchedEffect(Unit) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-                            != PackageManager.PERMISSION_GRANTED
-                        ) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            CompositionLocalProvider(LocalContext provides localizedContext) {
+                BriefClockTheme(
+                    themeMode = themeMode,
+                    themeColor = themeColor
+                ) {
+                    val context = LocalContext.current
+                    var selectedTab by remember { mutableStateOf(BottomTab.ALARM) }
+
+                    // Notification permission for Android 13+
+                    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.RequestPermission()
+                    ) {}
+
+                    LaunchedEffect(Unit) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                                != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
                         }
                     }
-                }
 
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = MaterialTheme.colorScheme.background,
-                    bottomBar = {
-                        NavigationBar(
-                            containerColor = Color(0xFF181C22),
-                            tonalElevation = 8.dp
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = MaterialTheme.colorScheme.background,
+                        bottomBar = {
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 3.dp
+                            ) {
+                                NavigationBarItem(
+                                    selected = selectedTab == BottomTab.ALARM,
+                                    onClick = { selectedTab = BottomTab.ALARM },
+                                    icon = {
+                                        Icon(
+                                            Icons.Default.Notifications,
+                                            contentDescription = stringResource(R.string.nav_alarm)
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_alarm)) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+
+                                NavigationBarItem(
+                                    selected = selectedTab == BottomTab.ROULETTE,
+                                    onClick = { selectedTab = BottomTab.ROULETTE },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.ic_emoji_revolver),
+                                            contentDescription = stringResource(R.string.nav_roulette),
+                                            modifier = Modifier.size(24.dp),
+                                            tint = Color.Unspecified
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_roulette)) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+
+                                NavigationBarItem(
+                                    selected = selectedTab == BottomTab.STATISTICS,
+                                    onClick = { selectedTab = BottomTab.STATISTICS },
+                                    icon = {
+                                        Icon(
+                                            AppIcons.BarChart,
+                                            contentDescription = stringResource(R.string.nav_statistics)
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.nav_statistics)) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
+                        }
+                    ) { innerPadding ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            color = MaterialTheme.colorScheme.background
                         ) {
-                            NavigationBarItem(
-                                selected = selectedTab == BottomTab.ALARM,
-                                onClick = { selectedTab = BottomTab.ALARM },
-                                icon = {
-                                    Icon(
-                                        Icons.Default.Notifications,
-                                        contentDescription = stringResource(R.string.nav_alarm)
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.nav_alarm)) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color.White,
-                                    selectedTextColor = Color.White,
-                                    indicatorColor = Color(0xFFE53935),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
+                            when (selectedTab) {
+                                BottomTab.ALARM -> BriefAlarmScreen(
+                                    context = context,
+                                    database = database,
+                                    audioRecorderHelper = audioRecorderHelper,
+                                    onOpenSettings = { showSettingsDialog = true }
                                 )
-                            )
-
-                            NavigationBarItem(
-                                selected = selectedTab == BottomTab.ROULETTE,
-                                onClick = { selectedTab = BottomTab.ROULETTE },
-                                icon = {
-                                    Icon(
-                                        AppIcons.Revolver,
-                                        contentDescription = stringResource(R.string.nav_roulette)
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.nav_roulette)) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color.White,
-                                    selectedTextColor = Color.White,
-                                    indicatorColor = Color(0xFFE53935),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
+                                BottomTab.ROULETTE -> NapRouletteScreen(
+                                    context = context,
+                                    session = rouletteSession,
+                                    database = database
                                 )
-                            )
-
-                            NavigationBarItem(
-                                selected = selectedTab == BottomTab.STATISTICS,
-                                onClick = { selectedTab = BottomTab.STATISTICS },
-                                icon = {
-                                    Icon(
-                                        AppIcons.BarChart,
-                                        contentDescription = stringResource(R.string.nav_statistics)
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.nav_statistics)) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Color.White,
-                                    selectedTextColor = Color.White,
-                                    indicatorColor = Color(0xFFE53935),
-                                    unselectedIconColor = Color.Gray,
-                                    unselectedTextColor = Color.Gray
+                                BottomTab.STATISTICS -> StatisticsScreen(
+                                    context = context,
+                                    database = database,
+                                    onOpenSettings = { showSettingsDialog = true }
                                 )
-                            )
+                            }
                         }
                     }
-                ) { innerPadding ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        when (selectedTab) {
-                            BottomTab.ALARM -> BriefAlarmScreen(
-                                context = context,
-                                database = database,
-                                audioRecorderHelper = audioRecorderHelper
-                            )
-                            BottomTab.ROULETTE -> NapRouletteScreen(
-                                context = context,
-                                session = rouletteSession,
-                                database = database
-                            )
-                            BottomTab.STATISTICS -> StatisticsScreen(
-                                context = context,
-                                database = database
-                            )
-                        }
+
+                    if (showSettingsDialog) {
+                        SettingsDialog(
+                            currentThemeMode = themeMode,
+                            currentThemeColor = themeColor,
+                            currentLanguage = appLanguage,
+                            onThemeModeChange = { newMode ->
+                                themeMode = newMode
+                                themePreferences.themeMode = newMode
+                            },
+                            onThemeColorChange = { newColor ->
+                                themeColor = newColor
+                                themePreferences.themeColor = newColor
+                            },
+                            onLanguageChange = { newLang ->
+                                appLanguage = newLang
+                                themePreferences.language = newLang
+                            },
+                            onDismiss = { showSettingsDialog = false }
+                        )
                     }
                 }
             }
