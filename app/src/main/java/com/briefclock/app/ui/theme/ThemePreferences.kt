@@ -1,8 +1,11 @@
 package com.briefclock.app.ui.theme
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.content.res.Resources
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import java.util.Locale
 
@@ -130,6 +133,40 @@ class ThemePreferences(context: Context) {
         private const val KEY_THEME_MODE = "pref_theme_mode"
         private const val KEY_THEME_COLOR = "pref_theme_color"
         private const val KEY_LANGUAGE = "pref_language"
+
+        fun getLocaleForLanguage(lang: AppLanguage): Locale {
+            return when (lang) {
+                AppLanguage.ZH -> Locale.SIMPLIFIED_CHINESE
+                AppLanguage.EN -> Locale.ENGLISH
+                AppLanguage.SYSTEM -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        Resources.getSystem().configuration.locales[0]
+                    } else {
+                        @Suppress("DEPRECATION")
+                        Resources.getSystem().configuration.locale
+                    }
+                }
+            }
+        }
+
+        fun applyLanguage(context: Context, lang: AppLanguage): Locale {
+            val locale = getLocaleForLanguage(lang)
+            Locale.setDefault(locale)
+
+            val res = context.resources
+            val config = Configuration(res.configuration)
+            config.setLocale(locale)
+            @Suppress("DEPRECATION")
+            res.updateConfiguration(config, res.displayMetrics)
+
+            val appRes = context.applicationContext.resources
+            val appConfig = Configuration(appRes.configuration)
+            appConfig.setLocale(locale)
+            @Suppress("DEPRECATION")
+            appRes.updateConfiguration(appConfig, appRes.displayMetrics)
+
+            return locale
+        }
     }
 
     var themeMode: ThemeMode
@@ -152,20 +189,4 @@ class ThemePreferences(context: Context) {
             return AppLanguage.entries.find { it.code == v } ?: AppLanguage.SYSTEM
         }
         set(value) = prefs.edit().putString(KEY_LANGUAGE, value.code).apply()
-
-    fun getLocalizedContext(context: Context): Context {
-        val lang = language
-        if (lang == AppLanguage.SYSTEM) {
-            return context
-        }
-        val locale = when (lang) {
-            AppLanguage.ZH -> Locale.SIMPLIFIED_CHINESE
-            AppLanguage.EN -> Locale.ENGLISH
-            else -> Locale.getDefault()
-        }
-        Locale.setDefault(locale)
-        val config = Configuration(context.resources.configuration)
-        config.setLocale(locale)
-        return context.createConfigurationContext(config)
-    }
 }

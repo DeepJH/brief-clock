@@ -2,6 +2,7 @@ package com.briefclock.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -30,10 +32,7 @@ import com.briefclock.app.ui.screens.BriefAlarmScreen
 import com.briefclock.app.ui.screens.NapRouletteScreen
 import com.briefclock.app.ui.screens.NapRouletteSession
 import com.briefclock.app.ui.screens.StatisticsScreen
-import com.briefclock.app.ui.theme.AppLanguage
 import com.briefclock.app.ui.theme.BriefClockTheme
-import com.briefclock.app.ui.theme.ThemeColor
-import com.briefclock.app.ui.theme.ThemeMode
 import com.briefclock.app.ui.theme.ThemePreferences
 
 enum class BottomTab(val index: Int) {
@@ -55,17 +54,23 @@ class MainActivity : ComponentActivity() {
         audioRecorderHelper = AudioRecorderHelper(this)
         themePreferences = ThemePreferences(this)
 
+        // Apply saved language before UI initialization
+        ThemePreferences.applyLanguage(this, themePreferences.language)
+
         setContent {
             var themeMode by remember { mutableStateOf(themePreferences.themeMode) }
             var themeColor by remember { mutableStateOf(themePreferences.themeColor) }
             var appLanguage by remember { mutableStateOf(themePreferences.language) }
             var showSettingsDialog by remember { mutableStateOf(false) }
 
-            val localizedContext = remember(appLanguage) {
-                themePreferences.getLocalizedContext(this@MainActivity)
+            val currentSysConfig = LocalConfiguration.current
+            val localizedConfig = remember(appLanguage, currentSysConfig) {
+                Configuration(currentSysConfig).apply {
+                    setLocale(ThemePreferences.getLocaleForLanguage(appLanguage))
+                }
             }
 
-            CompositionLocalProvider(LocalContext provides localizedContext) {
+            CompositionLocalProvider(LocalConfiguration provides localizedConfig) {
                 BriefClockTheme(
                     themeMode = themeMode,
                     themeColor = themeColor
@@ -200,6 +205,7 @@ class MainActivity : ComponentActivity() {
                             onLanguageChange = { newLang ->
                                 appLanguage = newLang
                                 themePreferences.language = newLang
+                                ThemePreferences.applyLanguage(this@MainActivity, newLang)
                             },
                             onDismiss = { showSettingsDialog = false }
                         )

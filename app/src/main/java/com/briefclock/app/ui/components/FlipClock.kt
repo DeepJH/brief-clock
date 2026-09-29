@@ -14,12 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -50,7 +52,7 @@ fun FlipClock(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FlipCard(value = hours, label = "HR")
+        MechanicalFlipCard(value = hours, label = "HOUR")
 
         Text(
             text = ":",
@@ -60,7 +62,7 @@ fun FlipClock(
             modifier = Modifier.padding(horizontal = 6.dp)
         )
 
-        FlipCard(value = minutes, label = "MIN")
+        MechanicalFlipCard(value = minutes, label = "MIN")
 
         Text(
             text = ":",
@@ -70,91 +72,142 @@ fun FlipClock(
             modifier = Modifier.padding(horizontal = 6.dp)
         )
 
-        FlipCard(value = seconds, label = "SEC", isSeconds = true)
+        MechanicalFlipCard(value = seconds, label = "SEC", isSeconds = true)
     }
 }
 
+/**
+ * Authentic Solari Split-Flap mechanical digit component.
+ * Features 4 half-panels:
+ * - Back Top (reveals new digit top)
+ * - Back Bottom (holds old digit bottom until covered)
+ * - Front Upper Flap (rotates forward 0° -> 90° with old digit top)
+ * - Front Lower Flap (rotates into place -90° -> 0° with new digit bottom)
+ */
 @Composable
-private fun FlipCard(
+fun MechanicalFlipCard(
     value: Int,
     label: String,
-    isSeconds: Boolean = false
+    isSeconds: Boolean = false,
+    cardWidth: Dp = if (isSeconds) 72.dp else 82.dp,
+    cardHeight: Dp = 72.dp,
+    fontSize: TextUnit = if (isSeconds) 34.sp else 38.sp
 ) {
-    var currentValue by remember { mutableIntStateOf(value) }
-    var previousValue by remember { mutableIntStateOf(value) }
-    val flipProgress = remember { Animatable(0f) }
+    var currentDisplayVal by remember { mutableIntStateOf(value) }
+    var previousDisplayVal by remember { mutableIntStateOf(value) }
+    val flipProgress = remember { Animatable(1f) }
 
     LaunchedEffect(value) {
-        if (value != currentValue) {
-            previousValue = currentValue
-            currentValue = value
+        if (value != currentDisplayVal) {
+            previousDisplayVal = currentDisplayVal
+            currentDisplayVal = value
             flipProgress.snapTo(0f)
             flipProgress.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+                animationSpec = tween(durationMillis = 380, easing = FastOutSlowInEasing)
             )
         }
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val formattedNumber = String.format("%02d", currentValue)
-        val formattedPrev = String.format("%02d", previousValue)
+    val oldStr = String.format("%02d", previousDisplayVal)
+    val newStr = String.format("%02d", currentDisplayVal)
+    val isAnimating = flipProgress.value < 1f
+    val progress = flipProgress.value
 
-        // Card Container
+    val halfHeight = cardHeight / 2
+    val cardBg = Color(0xFF1E222A)
+    val textColor = if (isSeconds) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9)
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .width(if (isSeconds) 72.dp else 84.dp)
-                .height(68.dp)
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(12.dp))
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF242A35),
-                            Color(0xFF181C24)
-                        )
-                    )
-                )
-                .border(1.dp, Color(0xFF384050), RoundedCornerShape(12.dp)),
+                .size(width = cardWidth, height = cardHeight)
+                .shadow(elevation = 8.dp, shape = RoundedCornerShape(10.dp))
+                .border(1.dp, Color(0xFF333B47), RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center
         ) {
-            // Underneath/Next Number Display
-            Text(
-                text = formattedNumber,
-                fontSize = if (isSeconds) 34.sp else 38.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontFamily = FontFamily.Monospace,
-                color = if (isSeconds) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface
-            )
+            // 1. Stationary Background Cards
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Background Top Half (Shows NEW digit top if animating, else current)
+                FlapTopHalf(
+                    text = if (isAnimating) newStr else newStr,
+                    cardWidth = cardWidth,
+                    totalHeight = cardHeight,
+                    backgroundColor = cardBg,
+                    textColor = textColor,
+                    fontSize = fontSize
+                )
 
-            // Flipping Flap Overlay (Rotates downward from middle seam)
-            if (flipProgress.value in 0.01f..0.99f) {
-                val rotX = flipProgress.value * 180f
-                val showingPrev = rotX < 90f
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            rotationX = rotX
-                            cameraDistance = 12f * density
-                            transformOrigin = TransformOrigin(0.5f, 0.5f)
-                        }
-                        .background(Color(0xFF1F242D).copy(alpha = 0.85f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (showingPrev) formattedPrev else formattedNumber,
-                        fontSize = if (isSeconds) 34.sp else 38.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
+                // Background Bottom Half (Shows OLD digit bottom if animating, else current)
+                FlapBottomHalf(
+                    text = if (isAnimating) oldStr else newStr,
+                    cardWidth = cardWidth,
+                    totalHeight = cardHeight,
+                    backgroundColor = cardBg,
+                    textColor = textColor,
+                    fontSize = fontSize
+                )
+            }
+
+            // 2. Animated Flipping Flaps
+            if (isAnimating) {
+                if (progress <= 0.5f) {
+                    // Upper half folding down (0° -> 90°)
+                    val rotX = progress * 180f
+                    val shadowAlpha = (progress * 1.4f).coerceIn(0f, 0.7f)
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .size(cardWidth, halfHeight)
+                            .graphicsLayer {
+                                rotationX = rotX
+                                cameraDistance = 16f * density
+                                transformOrigin = TransformOrigin(0.5f, 1.0f) // Pivot at bottom seam
+                            }
+                    ) {
+                        FlapTopHalf(
+                            text = oldStr,
+                            cardWidth = cardWidth,
+                            totalHeight = cardHeight,
+                            backgroundColor = cardBg,
+                            textColor = textColor,
+                            fontSize = fontSize,
+                            shadowAlpha = shadowAlpha
+                        )
+                    }
+                } else {
+                    // Lower half unfolding down (-90° -> 0°)
+                    val rotX = (progress - 1f) * 180f
+                    val shadowAlpha = ((1f - progress) * 1.4f).coerceIn(0f, 0.7f)
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .size(cardWidth, halfHeight)
+                            .graphicsLayer {
+                                rotationX = rotX
+                                cameraDistance = 16f * density
+                                transformOrigin = TransformOrigin(0.5f, 0.0f) // Pivot at top seam
+                            }
+                    ) {
+                        FlapBottomHalf(
+                            text = newStr,
+                            cardWidth = cardWidth,
+                            totalHeight = cardHeight,
+                            backgroundColor = cardBg,
+                            textColor = textColor,
+                            fontSize = fontSize,
+                            shadowAlpha = shadowAlpha
+                        )
+                    }
                 }
             }
 
-            // Mechanical Horizontal Split Line / Seam
+            // 3. Central Divider Slit / Seam
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -163,19 +216,17 @@ private fun FlipCard(
                     .align(Alignment.Center)
             )
 
-            // Left Hinge Rivet
+            // Side Hinge Rivets
             Box(
                 modifier = Modifier
-                    .size(4.dp)
+                    .size(width = 4.dp, height = 6.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Color(0xFF64748B))
                     .align(Alignment.CenterStart)
             )
-
-            // Right Hinge Rivet
             Box(
                 modifier = Modifier
-                    .size(4.dp)
+                    .size(width = 4.dp, height = 6.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Color(0xFF64748B))
                     .align(Alignment.CenterEnd)
@@ -191,5 +242,91 @@ private fun FlipCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             letterSpacing = 1.2.sp
         )
+    }
+}
+
+@Composable
+private fun FlapTopHalf(
+    text: String,
+    cardWidth: Dp,
+    totalHeight: Dp,
+    backgroundColor: Color,
+    textColor: Color,
+    fontSize: TextUnit,
+    shadowAlpha: Float = 0f
+) {
+    val halfHeight = totalHeight / 2
+    Box(
+        modifier = Modifier
+            .size(cardWidth, halfHeight)
+            .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+            .background(backgroundColor),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        // Full height box aligned at top, text centered
+        Box(
+            modifier = Modifier.size(cardWidth, totalHeight),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = fontSize,
+                fontWeight = FontWeight.ExtraBold,
+                fontFamily = FontFamily.Monospace,
+                color = textColor,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        if (shadowAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = shadowAlpha))
+            )
+        }
+    }
+}
+
+@Composable
+private fun FlapBottomHalf(
+    text: String,
+    cardWidth: Dp,
+    totalHeight: Dp,
+    backgroundColor: Color,
+    textColor: Color,
+    fontSize: TextUnit,
+    shadowAlpha: Float = 0f
+) {
+    val halfHeight = totalHeight / 2
+    Box(
+        modifier = Modifier
+            .size(cardWidth, halfHeight)
+            .clip(RoundedCornerShape(bottomStart = 10.dp, bottomEnd = 10.dp))
+            .background(backgroundColor),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        // Full height box aligned at bottom, text centered
+        Box(
+            modifier = Modifier.size(cardWidth, totalHeight),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = fontSize,
+                fontWeight = FontWeight.ExtraBold,
+                fontFamily = FontFamily.Monospace,
+                color = textColor,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        if (shadowAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = shadowAlpha))
+            )
+        }
     }
 }
