@@ -3,6 +3,7 @@ package com.briefclock.app.ui.screens
 import android.content.Context
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,9 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.briefclock.app.R
@@ -53,7 +57,7 @@ fun NapRouletteScreen(
     var showRulesDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Timer while sleeping
+    // Timer while sleeping (tracked silently in background)
     LaunchedEffect(session.gameState, session.startTimeMs) {
         if (session.gameState == RouletteState.SLEEPING) {
             while (session.gameState == RouletteState.SLEEPING) {
@@ -72,7 +76,7 @@ fun NapRouletteScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Screen Header: Nap Roulette (English original name) + Rules Info Button
+        // Screen Header: Nap Roulette + Rules Info Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -103,14 +107,43 @@ fun NapRouletteScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
-        // 3D Unshaded Revolver Canvas (Directly on screen, NO enclosing box/card)
+        // 3D Unshaded Revolver Canvas with Interactive Tap Zones:
+        // Left half (barrel): Fire Gunshot Sound + Recoil + Muzzle Flash
+        // Right half (cylinder): Cylinder Spin Sound + Cylinder Rotation Animation
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = 6.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        val isLeftHalf = offset.x < size.width / 2f
+                        if (isLeftHalf) {
+                            // Tap left half: Gunshot sound + recoil + flash
+                            coroutineScope.launch {
+                                SoundEffects.playGunshot(context)
+                                triggerPulled = true
+                                muzzleFlash = true
+                                recoilAnim.snapTo(0f)
+                                recoilAnim.animateTo(1f, tween(50))
+                                muzzleFlash = false
+                                recoilAnim.animateTo(0f, tween(240))
+                                triggerPulled = false
+                            }
+                        } else {
+                            // Tap right half: Cylinder spin sound + rotation
+                            coroutineScope.launch {
+                                SoundEffects.playCylinderSpin(context)
+                                cylinderAngleAnim.animateTo(
+                                    targetValue = cylinderAngleAnim.value + 360f,
+                                    animationSpec = tween(400)
+                                )
+                            }
+                        }
+                    }
+                }
         ) {
             RevolverCanvas(
                 cylinderAngle = cylinderAngleAnim.value,
@@ -121,7 +154,15 @@ fun NapRouletteScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        // Tap hint guide
+        Text(
+            text = stringResource(R.string.roulette_interactive_hint),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+            modifier = Modifier.padding(bottom = 10.dp)
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Dynamic State UI
         when (session.gameState) {
@@ -196,41 +237,41 @@ fun NapRouletteScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = stringResource(R.string.roulette_sleeping),
-                            fontSize = 15.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // Elapsed Time display
+                        // True Gamble: Time is strictly hidden while sleeping!
                         Text(
-                            text = formatDuration(session.elapsedSec),
-                            fontSize = 46.sp,
+                            text = "? ? : ? ?",
+                            fontSize = 44.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                            letterSpacing = 2.sp
                         )
 
-                        val remaining = (session.targetDurationSec - session.elapsedSec).coerceAtLeast(0)
+                        Spacer(modifier = Modifier.height(10.dp))
+
                         Text(
-                            text = if (remaining > 0) {
-                                "${stringResource(R.string.roulette_remaining_time)}: ${formatDuration(remaining)}"
-                            } else {
-                                stringResource(R.string.roulette_overtime)
-                            },
-                            fontSize = 14.sp,
-                            color = if (remaining > 0) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF10B981),
-                            fontWeight = FontWeight.SemiBold
+                            text = stringResource(R.string.roulette_sleeping_blind_hint),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(22.dp))
 
-                        // Wake Up / Pull Trigger Button
+                        // Wake Up / Pull Trigger Button (Neutral theme color to avoid leaking whether target was met)
                         Button(
                             onClick = {
                                 coroutineScope.launch {
@@ -269,23 +310,17 @@ fun NapRouletteScreen(
                                     session.gameState = RouletteState.RESULT
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (session.elapsedSec >= session.targetDurationSec) {
-                                    Color(0xFF10B981)
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                }
-                            ),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(percent = 50),
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxWidth(0.9f)
                                 .height(52.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.roulette_wake_up),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -329,7 +364,7 @@ fun NapRouletteScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Stats Summary Row
+                        // Stats Summary Row (Reveals target vs actual time only after pulling trigger)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly

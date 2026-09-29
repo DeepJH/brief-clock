@@ -44,10 +44,12 @@
     <!-- Nap Roulette (就英文原名) -->
     <string name="roulette_title">Nap Roulette</string>
     <string name="roulette_subtitle">设定目标时间，赌一把你的自律！</string>
+    <string name="roulette_interactive_hint">👈 点击左半部开火  |  点击右半部转动弹仓 👉</string>
     <string name="roulette_rules_title">Nap Roulette 规则说明</string>
-    <string name="roulette_rules_content">1. 上下滚动滚轮设定目标小憩时长。\n2. 点击“开赌 / 开始小憩”，放下手机安心入睡。\n3. 睡醒后点击“醒来 / 扣动扳机”：\n   • 睡够了目标时长：咔哒！空仓击发，顺利存活！\n   • 没睡够提前醒来：砰！枪声响起，挑战失败！</string>
+    <string name="roulette_rules_content">1. 上下滚动滚轮设定目标小憩时长。\n2. 点击“开赌 / 开始小憩”，放下手机安心入睡。小憩过程中时间完全保密！\n3. 睡醒后点击“醒来 / 扣动扳机”揭晓结果：\n   • 睡够了目标时长：咔哒！空仓击发，顺利存活！\n   • 没睡够提前醒来：砰！枪声响起，挑战失败！</string>
     <string name="roulette_start">开赌 / 开始小憩</string>
-    <string name="roulette_sleeping">小憩中… 坚持住，别提前醒来！</string>
+    <string name="roulette_sleeping">盲盒小憩进行中…</string>
+    <string name="roulette_sleeping_blind_hint">考验生物钟的时候到了！扣动扳机揭晓前，时间完全保密。</string>
     <string name="roulette_wake_up">醒来 / 扣动扳机</string>
     <string name="roulette_target_time">目标小憩时长</string>
     <string name="roulette_elapsed_time">已睡时长</string>

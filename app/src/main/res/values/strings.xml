@@ -44,10 +44,12 @@
     <!-- Nap Roulette -->
     <string name="roulette_title">Nap Roulette</string>
     <string name="roulette_subtitle">Set nap target. Gamble your discipline!</string>
+    <string name="roulette_interactive_hint">👈 Tap left to fire  |  Tap right to spin 👉</string>
     <string name="roulette_rules_title">Nap Roulette Rules</string>
-    <string name="roulette_rules_content">1. Choose your target nap duration with the roller.\n2. Tap \'Start Gamble\' and relax to sleep.\n3. When you wake up, pull the trigger:\n   • Slept full duration or more: Click! Empty chamber, you survived!\n   • Woke up prematurely: BANG! Gunshot! Challenge failed.</string>
+    <string name="roulette_rules_content">1. Choose your target nap duration with the roller.\n2. Tap \'Start Gamble\' and relax to sleep. Time is strictly hidden while sleeping!\n3. When you wake up, pull the trigger to reveal:\n   • Slept full duration or more: Click! Empty chamber, you survived!\n   • Woke up prematurely: BANG! Gunshot! Challenge failed.</string>
     <string name="roulette_start">Start Gamble</string>
-    <string name="roulette_sleeping">Sleeping… Don\'t wake up early!</string>
+    <string name="roulette_sleeping">Nap Gamble in Progress…</string>
+    <string name="roulette_sleeping_blind_hint">Trust your body clock. Time is strictly hidden until you pull the trigger!</string>
     <string name="roulette_wake_up">Wake Up / Pull Trigger</string>
     <string name="roulette_target_time">Target Nap Time</string>
     <string name="roulette_elapsed_time">Elapsed Time</string>
