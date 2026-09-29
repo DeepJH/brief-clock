@@ -6,6 +6,11 @@
     <string name="nav_roulette">Nap Roulette</string>
     <string name="nav_statistics">Statistics</string>
 
+    <!-- Clock Labels -->
+    <string name="clock_hour">HOUR</string>
+    <string name="clock_minute">MIN</string>
+    <string name="clock_second">SEC</string>
+
     <!-- Brief Alert -->
     <string name="alarm_title">Brief Alert</string>
     <string name="alarm_screen_title">Brief Alert</string>

@@ -1,8 +1,7 @@
 package com.briefclock.app.ui.screens
 
 import android.content.Context
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,13 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.briefclock.app.R
@@ -57,7 +55,7 @@ fun NapRouletteScreen(
     var showRulesDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Timer while sleeping (tracked silently in background)
+    // Timer while sleeping (silently tracked in background, NEVER shown on screen)
     LaunchedEffect(session.gameState, session.startTimeMs) {
         if (session.gameState == RouletteState.SLEEPING) {
             while (session.gameState == RouletteState.SLEEPING) {
@@ -76,7 +74,7 @@ fun NapRouletteScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Screen Header: Nap Roulette + Rules Info Button
+        // Screen Header: Title + Rules Info Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -228,101 +226,82 @@ fun NapRouletteScreen(
             }
 
             RouletteState.SLEEPING -> {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
+                // When gambling: NO time displayed! Only the animated pulsating trigger button!
+                val infinitePulse = rememberInfiniteTransition(label = "sleepingPulse")
+                val pulseScale by infinitePulse.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.07f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(850, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "pulse"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 28.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.roulette_sleeping),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                triggerPulled = true
+                                delay(40)
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                                val isSuccess = session.elapsedSec >= session.targetDurationSec
+                                session.lastResultSuccess = isSuccess
 
-                        // True Gamble: Time is strictly hidden while sleeping!
-                        Text(
-                            text = "? ? : ? ?",
-                            fontSize = 44.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                            letterSpacing = 2.sp
-                        )
+                                if (isSuccess) {
+                                    // Empty Chamber Click
+                                    SoundEffects.playTriggerClick(context)
+                                    hammerCocked = false
+                                } else {
+                                    // BANG! Gunshot & Recoil
+                                    SoundEffects.playGunshot(context)
+                                    muzzleFlash = true
+                                    hammerCocked = false
 
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = stringResource(R.string.roulette_sleeping_blind_hint),
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(22.dp))
-
-                        // Wake Up / Pull Trigger Button (Neutral theme color to avoid leaking whether target was met)
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    triggerPulled = true
-                                    delay(40)
-
-                                    val isSuccess = session.elapsedSec >= session.targetDurationSec
-                                    session.lastResultSuccess = isSuccess
-
-                                    if (isSuccess) {
-                                        // Empty Chamber Click
-                                        SoundEffects.playTriggerClick(context)
-                                        hammerCocked = false
-                                    } else {
-                                        // BANG! Gunshot & Recoil
-                                        SoundEffects.playGunshot(context)
-                                        muzzleFlash = true
-                                        hammerCocked = false
-
-                                        // Recoil kickback animation
-                                        recoilAnim.animateTo(1f, tween(60))
-                                        recoilAnim.animateTo(0f, tween(250))
-                                        muzzleFlash = false
-                                    }
-
-                                    // Record to Database
-                                    val record = NapRecord(
-                                        targetDurationSec = session.targetDurationSec,
-                                        actualDurationSec = session.elapsedSec,
-                                        isSuccess = isSuccess,
-                                        timestamp = System.currentTimeMillis()
-                                    )
-                                    database.insertNapRecord(record)
-                                    onStatsUpdated()
-
-                                    session.gameState = RouletteState.RESULT
+                                    // Recoil kickback animation
+                                    recoilAnim.animateTo(1f, tween(60))
+                                    recoilAnim.animateTo(0f, tween(250))
+                                    muzzleFlash = false
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            shape = RoundedCornerShape(percent = 50),
-                            modifier = Modifier
-                                .fillMaxWidth(0.9f)
-                                .height(52.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.roulette_wake_up),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
+
+                                // Record to Database
+                                val record = NapRecord(
+                                    targetDurationSec = session.targetDurationSec,
+                                    actualDurationSec = session.elapsedSec,
+                                    isSuccess = isSuccess,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                                database.insertNapRecord(record)
+                                onStatsUpdated()
+
+                                session.gameState = RouletteState.RESULT
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(percent = 50),
+                        modifier = Modifier
+                            .scale(pulseScale)
+                            .fillMaxWidth(0.85f)
+                            .height(64.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.roulette_wake_up),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
             }

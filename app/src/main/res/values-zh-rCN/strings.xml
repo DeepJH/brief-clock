@@ -1,14 +1,19 @@
 <resources>
     <string name="app_name">讲解时</string>
 
-    <!-- Navigation (就英文原名) -->
-    <string name="nav_alarm">Brief Alert</string>
-    <string name="nav_roulette">Nap Roulette</string>
-    <string name="nav_statistics">Statistics</string>
+    <!-- 底部导航 (完全汉化) -->
+    <string name="nav_alarm">录音设闹</string>
+    <string name="nav_roulette">小憩轮盘</string>
+    <string name="nav_statistics">数据统计</string>
 
-    <!-- Brief Alert -->
-    <string name="alarm_title">Brief Alert</string>
-    <string name="alarm_screen_title">Brief Alert</string>
+    <!-- 时钟标签 (完全汉化) -->
+    <string name="clock_hour">时</string>
+    <string name="clock_minute">分</string>
+    <string name="clock_second">秒</string>
+
+    <!-- 录音设闹界面 (完全汉化) -->
+    <string name="alarm_title">录音闹钟</string>
+    <string name="alarm_screen_title">录音设闹</string>
     <string name="alarm_screen_subtitle">按住快速录音设置专属闹钟</string>
     <string name="alarm_hold_to_record_capsule">按住录音设闹钟</string>
     <string name="alarm_hold_to_record">按住录音设为闹钟</string>
@@ -26,7 +31,7 @@
     <string name="alarm_save">保存闹钟</string>
     <string name="alarm_cancel">取消</string>
     <string name="alarm_delete">删除</string>
-    <string name="alarm_voice_tag">自定义语音铃声</string>
+    <string name="alarm_voice_tag">语音铃声</string>
     <string name="alarm_no_alarms">暂无已设闹钟。</string>
     <string name="alarm_add_regular">添加闹钟</string>
     <string name="alarm_saved_success">闹钟设置成功</string>
@@ -41,15 +46,15 @@
     <string name="alarm_repeat_weekdays">工作日</string>
     <string name="alarm_repeat_weekends">周末</string>
 
-    <!-- Nap Roulette (就英文原名) -->
-    <string name="roulette_title">Nap Roulette</string>
+    <!-- 小憩轮盘赌 (完全汉化) -->
+    <string name="roulette_title">小憩轮盘赌</string>
     <string name="roulette_subtitle">设定目标时间，赌一把你的自律！</string>
     <string name="roulette_interactive_hint">👈 点击左半部开火  |  点击右半部转动弹仓 👉</string>
-    <string name="roulette_rules_title">Nap Roulette 规则说明</string>
+    <string name="roulette_rules_title">小憩轮盘赌规则说明</string>
     <string name="roulette_rules_content">1. 上下滚动滚轮设定目标小憩时长。\n2. 点击“开赌 / 开始小憩”，放下手机安心入睡。小憩过程中时间完全保密！\n3. 睡醒后点击“醒来 / 扣动扳机”揭晓结果：\n   • 睡够了目标时长：咔哒！空仓击发，顺利存活！\n   • 没睡够提前醒来：砰！枪声响起，挑战失败！</string>
     <string name="roulette_start">开赌 / 开始小憩</string>
     <string name="roulette_sleeping">盲盒小憩进行中…</string>
-    <string name="roulette_sleeping_blind_hint">考验生物钟的时候到了！扣动扳机揭晓前，时间完全保密。</string>
+    <string name="roulette_sleeping_blind_hint">考验生物钟的时候到了！睡醒后点击扣动扳机揭晓结果。</string>
     <string name="roulette_wake_up">醒来 / 扣动扳机</string>
     <string name="roulette_target_time">目标小憩时长</string>
     <string name="roulette_elapsed_time">已睡时长</string>
@@ -61,7 +66,7 @@
     <string name="roulette_shot_desc">提前醒来！砰！挑战失败！</string>
     <string name="roulette_play_again">再来一局</string>
 
-    <!-- Statistics -->
+    <!-- 数据统计 (完全汉化) -->
     <string name="stats_title">数据统计</string>
     <string name="stats_subtitle">小憩自律与对局历史</string>
     <string name="stats_survival_rate">存活率 (胜率)</string>
@@ -83,7 +88,7 @@
     <string name="stats_clear_message">确定要清空所有小憩轮盘历史对局记录吗？</string>
     <string name="stats_clear_confirm">确认清空</string>
 
-    <!-- Settings -->
+    <!-- 个性化设置 (完全汉化) -->
     <string name="settings_title">个性化设置</string>
     <string name="settings_theme_color">主题主色调</string>
     <string name="settings_appearance">明暗外观</string>
