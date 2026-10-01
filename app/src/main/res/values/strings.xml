@@ -48,14 +48,14 @@
 
     <!-- Nap Roulette -->
     <string name="roulette_title">Nap Roulette</string>
-    <string name="roulette_subtitle">Set nap target. Gamble your discipline!</string>
+    <string name="roulette_subtitle">Anxious? Can\'t sleep? Turn sleeping into serious business like a gamble.</string>
     <string name="roulette_interactive_hint">👈 Tap left to fire  |  Tap right to spin 👉</string>
     <string name="roulette_rules_title">Nap Roulette Rules</string>
-    <string name="roulette_rules_content">1. Choose your target nap duration with the roller.\n2. Tap \'Start Gamble\' and relax to sleep. Time is strictly hidden while sleeping!\n3. When you wake up, pull the trigger to reveal:\n   • Slept full duration or more: Click! Empty chamber, you survived!\n   • Woke up prematurely: BANG! Gunshot! Challenge failed.</string>
-    <string name="roulette_start">Start Gamble</string>
+    <string name="roulette_rules_content">1. Choose your target nap duration.\n2. Tap \'Gamble!\' and sleep. Time is strictly hidden while sleeping!\n3. When you wake up, tap \'Wake Up\' to pull trigger:\n   • Slept full duration: Click! Empty chamber, you survived!\n   • Woke up prematurely: BANG! Gunshot! Challenge failed.</string>
+    <string name="roulette_start">Gamble!</string>
     <string name="roulette_sleeping">Nap Gamble in Progress…</string>
-    <string name="roulette_sleeping_blind_hint">Trust your body clock. Time is strictly hidden until you pull the trigger!</string>
-    <string name="roulette_wake_up">Wake Up / Pull Trigger</string>
+    <string name="roulette_sleeping_blind_hint">Trust your body clock. Tap when you wake up!</string>
+    <string name="roulette_wake_up">Wake Up</string>
     <string name="roulette_target_time">Target Nap Time</string>
     <string name="roulette_elapsed_time">Elapsed Time</string>
     <string name="roulette_remaining_time">Remaining Time</string>
@@ -98,4 +98,22 @@
     <string name="settings_language">App Language</string>
     <string name="settings_lang_system">System</string>
     <string name="settings_done">Done</string>
+
+    <!-- Disclaimer -->
+    <string name="disclaimer_title">Disclaimer (Non-Political)</string>
+    <string name="disclaimer_content">The app name \'讲解时\' (Brief Clock) and associated humor are purely linguistic puns for entertainment, with no relation to any political figures or political stance.</string>
+
+    <!-- Sponsorship -->
+    <string name="sponsor_title">Support &amp; Donate 💖</string>
+    <string name="sponsor_desc">Brief Clock is 100% free and open-source. If it helped you sleep better, consider buying the developer a coffee!</string>
+    <string name="sponsor_tab_wechat">WeChat Pay</string>
+    <string name="sponsor_tab_alipay">Alipay</string>
+
+    <!-- Easter Egg Game -->
+    <string name="easter_egg_title">Sleep Buster Challenge!</string>
+    <string name="easter_egg_hint">Tap the flying sleep emojis to shoot them down!</string>
+    <string name="easter_egg_result_title">Time\'s Up!</string>
+    <string name="easter_egg_score">Current Score: %d</string>
+    <string name="easter_egg_best">Best Score: %d</string>
+    <string name="easter_egg_confirm">Awesome</string>
 </resources>

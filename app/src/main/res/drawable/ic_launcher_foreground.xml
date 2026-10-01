@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Implied regular hexagon subtle guide -->
+    <path
+        android:strokeColor="#93C5FD"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.35"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,18 L85,36 L85,72 L54,90 L23,72 L23,36 Z" />
+
+    <!-- Horizontal Hourglass Funnel (Minimalist Blue Straight Lines) -->
+    <path
+        android:strokeColor="#2563EB"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M23,36 L54,54 L23,72" />
+
+    <path
+        android:strokeColor="#2563EB"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M85,36 L54,54 L85,72" />
+
+    <!-- Two Blue Bases of the Horizontal Hourglass -->
+    <path
+        android:strokeColor="#1D4ED8"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M23,36 L23,72" />
+
+    <path
+        android:strokeColor="#1D4ED8"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M85,36 L85,72" />
+
+    <!-- Center Big Exclamation Mark (Bold Blue) -->
+    <path
+        android:fillColor="#1D4ED8"
+        android:pathData="M50,22 Q54,18 58,22 L57,60 Q54,63 51,60 Z" />
+
+    <path
+        android:fillColor="#1D4ED8"
+        android:pathData="M54,72 A5.5,5.5 0 1,0 54,83 A5.5,5.5 0 1,0 54,72 Z" />
+</vector>

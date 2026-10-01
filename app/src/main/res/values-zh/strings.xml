@@ -2,8 +2,8 @@
     <string name="app_name">讲解时</string>
 
     <!-- 底部导航 (完全汉化) -->
-    <string name="nav_alarm">录音设闹</string>
-    <string name="nav_roulette">小憩轮盘</string>
+    <string name="nav_alarm">简述闹钟</string>
+    <string name="nav_roulette">小睡轮盘</string>
     <string name="nav_statistics">数据统计</string>
 
     <!-- 时钟标签 (完全汉化) -->
@@ -11,9 +11,9 @@
     <string name="clock_minute">分</string>
     <string name="clock_second">秒</string>
 
-    <!-- 录音设闹界面 (完全汉化) -->
-    <string name="alarm_title">录音闹钟</string>
-    <string name="alarm_screen_title">录音设闹</string>
+    <!-- 简述闹钟界面 (完全汉化) -->
+    <string name="alarm_title">简述闹钟</string>
+    <string name="alarm_screen_title">简述闹钟</string>
     <string name="alarm_screen_subtitle">按住快速录音设置专属闹钟</string>
     <string name="alarm_hold_to_record_capsule">按住录音设闹钟</string>
     <string name="alarm_hold_to_record">按住录音设为闹钟</string>
@@ -46,16 +46,16 @@
     <string name="alarm_repeat_weekdays">工作日</string>
     <string name="alarm_repeat_weekends">周末</string>
 
-    <!-- 小憩轮盘赌 (完全汉化) -->
-    <string name="roulette_title">小憩轮盘赌</string>
-    <string name="roulette_subtitle">设定目标时间，赌一把你的自律！</string>
+    <!-- 小睡轮盘 (完全汉化) -->
+    <string name="roulette_title">小睡轮盘</string>
+    <string name="roulette_subtitle">很焦虑？睡不着？那就让睡觉变成赌博般需要重视的正事。</string>
     <string name="roulette_interactive_hint">👈 点击左半部开火  |  点击右半部转动弹仓 👉</string>
-    <string name="roulette_rules_title">小憩轮盘赌规则说明</string>
-    <string name="roulette_rules_content">1. 上下滚动滚轮设定目标小憩时长。\n2. 点击“开赌 / 开始小憩”，放下手机安心入睡。小憩过程中时间完全保密！\n3. 睡醒后点击“醒来 / 扣动扳机”揭晓结果：\n   • 睡够了目标时长：咔哒！空仓击发，顺利存活！\n   • 没睡够提前醒来：砰！枪声响起，挑战失败！</string>
-    <string name="roulette_start">开赌 / 开始小憩</string>
+    <string name="roulette_rules_title">小睡轮盘规则说明</string>
+    <string name="roulette_rules_content">1. 上下滚动滚轮设定目标小憩时长。\n2. 点击“开赌！”，放下手机安心入睡。小憩过程中时间完全保密！\n3. 睡醒后点击“醒来”揭晓结果：\n   • 睡够了目标时长：咔哒！空仓击发，顺利存活！\n   • 没睡够提前醒来：砰！枪声响起，挑战失败！</string>
+    <string name="roulette_start">开赌！</string>
     <string name="roulette_sleeping">盲盒小憩进行中…</string>
     <string name="roulette_sleeping_blind_hint">考验生物钟的时候到了！睡醒后点击扣动扳机揭晓结果。</string>
-    <string name="roulette_wake_up">醒来 / 扣动扳机</string>
+    <string name="roulette_wake_up">醒来</string>
     <string name="roulette_target_time">目标小憩时长</string>
     <string name="roulette_elapsed_time">已睡时长</string>
     <string name="roulette_remaining_time">剩余时间</string>
@@ -98,4 +98,22 @@
     <string name="settings_language">应用语言</string>
     <string name="settings_lang_system">跟随系统</string>
     <string name="settings_done">完成</string>
+
+    <!-- 特别免责声明 -->
+    <string name="disclaimer_title">特别声明 (无政治立场)</string>
+    <string name="disclaimer_content">本应用名称“讲解时 (Brief Clock)”及相关调侃梗纯属同音谐音趣味调侃，旨在为作息自律增添乐趣，与任何历史或现实政治人物无关。开发者及本应用不代表、亦不持任何政治立场，请勿进行政治过度联想。</string>
+
+    <!-- 赞助支持 -->
+    <string name="sponsor_title">赞助支持 💖</string>
+    <string name="sponsor_desc">独立开发与维护不易，如果“讲解时”帮到了你的睡眠自律，欢迎请作者喝杯热咖啡！</string>
+    <string name="sponsor_tab_wechat">微信支付</string>
+    <string name="sponsor_tab_alipay">支付宝</string>
+
+    <!-- 彩蛋小游戏 -->
+    <string name="easter_egg_title">击碎困意大作战！</string>
+    <string name="easter_egg_hint">点击飞出的瞌睡表情，击碎它们！</string>
+    <string name="easter_egg_result_title">小游戏挑战结束！</string>
+    <string name="easter_egg_score">本次击中：%d 个</string>
+    <string name="easter_egg_best">历史最高纪录：%d 个</string>
+    <string name="easter_egg_confirm">太棒了</string>
 </resources>

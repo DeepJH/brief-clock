@@ -178,7 +178,8 @@ class MainActivity : ComponentActivity() {
                                 BottomTab.ROULETTE -> NapRouletteScreen(
                                     context = context,
                                     session = rouletteSession,
-                                    database = database
+                                    database = database,
+                                    onOpenSettings = { showSettingsDialog = true }
                                 )
                                 BottomTab.STATISTICS -> StatisticsScreen(
                                     context = context,

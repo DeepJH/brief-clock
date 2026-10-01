@@ -31,23 +31,24 @@ data class NapDurationOption(
     val label: String
 )
 
-val defaultNapOptions = listOf(
-    NapDurationOption(10, "10s (Test)"),
-    NapDurationOption(5 * 60, "5 mins"),
-    NapDurationOption(10 * 60, "10 mins"),
-    NapDurationOption(15 * 60, "15 mins"),
-    NapDurationOption(20 * 60, "20 mins"),
-    NapDurationOption(25 * 60, "25 mins"),
-    NapDurationOption(30 * 60, "30 mins"),
-    NapDurationOption(45 * 60, "45 mins"),
-    NapDurationOption(60 * 60, "60 mins"),
-    NapDurationOption(90 * 60, "90 mins")
-)
+/**
+ * 1-minute increment sequence for realistic nap duration:
+ * 10s (Test mode), 1 min, 2 mins, 3 mins, ... up to 60 mins.
+ */
+fun generateNapOptions(isChinese: Boolean = false): List<NapDurationOption> {
+    val list = ArrayList<NapDurationOption>(62)
+    list.add(NapDurationOption(10, if (isChinese) "10秒 (测试)" else "10s (Test)"))
+    for (m in 1..60) {
+        val label = if (isChinese) "${m} 分钟" else "${m} min"
+        list.add(NapDurationOption(m * 60, label))
+    }
+    return list
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VerticalDurationWheelPicker(
-    options: List<NapDurationOption> = defaultNapOptions,
+    options: List<NapDurationOption> = remember { generateNapOptions(false) },
     selectedSeconds: Int,
     onDurationSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -59,10 +60,10 @@ fun VerticalDurationWheelPicker(
 
     val initialIndex = remember(options, selectedSeconds) {
         val idx = options.indexOfFirst { it.seconds == selectedSeconds }
-        if (idx >= 0) idx else 3 // Default 15m
+        if (idx >= 0) idx else 15 // Default ~15m
     }
 
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (initialIndex - 1).coerceAtLeast(0))
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
 
     // Detect center item
@@ -101,10 +102,10 @@ fun VerticalDurationWheelPicker(
             .height(totalHeight),
         contentAlignment = Alignment.Center
     ) {
-        // Center Selection Highlight Lens / Pill
+        // Center Selection Highlight Lens
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.65f)
+                .fillMaxWidth(0.55f)
                 .height(itemHeight)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f))

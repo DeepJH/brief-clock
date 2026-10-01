@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import com.briefclock.app.R
 import com.briefclock.app.data.BriefClockDatabase
 import com.briefclock.app.model.NapRecord
 import com.briefclock.app.model.NapStatistics
+import com.briefclock.app.ui.components.SponsorDialog
 import com.briefclock.app.ui.components.SurvivalRateDonutChart
 import com.briefclock.app.ui.components.WeeklyNapBarChart
 import java.text.SimpleDateFormat
@@ -36,6 +38,7 @@ fun StatisticsScreen(
 ) {
     var stats by remember { mutableStateOf(NapStatistics()) }
     var showClearDialog by remember { mutableStateOf(false) }
+    var showSponsorDialog by remember { mutableStateOf(false) }
 
     fun refreshStats() {
         stats = database.getNapStatistics()
@@ -74,6 +77,15 @@ fun StatisticsScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Pink Heart Sponsor Button
+                    IconButton(onClick = { showSponsorDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = stringResource(R.string.sponsor_title),
+                            tint = Color(0xFFEC4899)
+                        )
+                    }
+
                     if (stats.totalGames > 0) {
                         IconButton(onClick = { showClearDialog = true }) {
                             Icon(
@@ -234,6 +246,11 @@ fun StatisticsScreen(
                 }
             }
         )
+    }
+
+    // Sponsor Dialog
+    if (showSponsorDialog) {
+        SponsorDialog(onDismiss = { showSponsorDialog = false })
     }
 }
 
