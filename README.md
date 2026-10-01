@@ -2,6 +2,16 @@
 
 Brief Clock (讲解时) 是一个现代、简洁且富有特色的 Android 智能语音时钟与小憩自律轮盘赌应用。
 
+## 免责声明 (Disclaimer)
+
+> **特别声明（无政治立场）**：  
+> 本应用中文名称“讲解时 (Brief Clock)”及相关调侃梗纯属同音谐音趣味调侃，旨在为作息习惯与小憩自律增添乐趣，与任何历史或现实政治人物无关。开发者及本应用不代表、亦不持任何政治立场，特此声明，请勿进行任何政治联想或过度解读。  
+> 
+> **Disclaimer (Non-Political)**:  
+> The app name \'讲解时\' (Brief Clock) and associated humor are purely linguistic puns for entertainment and habit building, with no connection to any historical or political figures. The developers and this application hold no political stance.
+
+---
+
 ## 特色功能 (Features)
 
 1. **简述闹钟 · 录音直达铃声**
@@ -27,11 +37,12 @@ Brief Clock (讲解时) 是一个现代、简洁且富有特色的 Android 智�
    - **近 7 天小憩趋势柱状图 (Weekly Bar Chart)**：动态呈现每日小憩时长分布与违规警示。
    - **指标卡片与战绩明细**：总对局、存活数、中弹数、总时长、平均时长、当前连胜及历史最高连胜记录。
 
-4. **个性化偏好与免责声明**
+4. **个性化偏好与设计**
    - **蓝白极简应用图标**：白色背景，中心大号电光蓝感叹号 `!` 结合横向沙漏直线漏斗，外廓构成饱满正六边形。
-   - **特别声明 (无政治立场)**：设置中心底部常驻免责声明，明确“讲解时 (Brief Clock)”及相关内容纯属同音谐音趣味调侃，与任何历史或现实政治人物无关。
    - **5 种主题主色调**：默认经典电光蓝（Blue），可选深红、翠绿、幻紫、琥珀橙。
    - **明暗与语言**：支持跟随系统、浅色、深色模式；支持跟随系统、简体中文（讲解时）、English 即时秒级防崩溃热切换。
+
+---
 
 ## 技术栈与工程架构
 
