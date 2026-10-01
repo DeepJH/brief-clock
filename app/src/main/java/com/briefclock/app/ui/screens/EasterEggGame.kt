@@ -1,7 +1,6 @@
 package com.briefclock.app.ui.screens
 
 import android.content.Context
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -14,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -27,12 +27,14 @@ import kotlinx.coroutines.delay
 import kotlin.math.*
 import kotlin.random.Random
 
-data class FlyingEmoji(
+class ActiveFlyingEmoji(
     val id: Long,
     val emoji: String,
     val angle: Float,
-    val speed: Float,
-    val spawnTime: Long,
+    val speed: Float, // dp per second
+    val fadeDurationSec: Float, // 0.15 - 0.45s
+    var currentDistDp: Float = 0f,
+    var ageSec: Float = 0f,
     var isHit: Boolean = false
 )
 
@@ -51,118 +53,134 @@ fun EasterEggGameScreen(
 ) {
     val context = LocalContext.current
     var score by remember { mutableIntStateOf(0) }
-    var timeLeftSec by remember { mutableIntStateOf(10) }
+    var timeLeftSec by remember { mutableFloatStateOf(10f) }
     var isGameOver by remember { mutableStateOf(false) }
 
-    // Best score from SharedPreferences
     val prefs = remember { context.getSharedPreferences("easter_egg_prefs", Context.MODE_PRIVATE) }
     var bestScore by remember { mutableIntStateOf(prefs.getInt("key_best_egg_score", 0)) }
 
-    val emojisList = remember { mutableStateListOf<FlyingEmoji>() }
+    val emojis = remember { mutableStateListOf<ActiveFlyingEmoji>() }
     var nextEmojiId by remember { mutableLongStateOf(0L) }
-
     val confettiList = remember { mutableStateListOf<ConfettiParticle>() }
 
-    // 10s Countdown Timer
-    LaunchedEffect(Unit) {
-        while (timeLeftSec > 0) {
-            delay(1000)
-            timeLeftSec--
-        }
-        isGameOver = true
+    // Psychedelic warp wave animation phase
+    var ringPhase by remember { mutableFloatStateOf(0f) }
 
-        // Play end gunshot sound and record best score
+    // 60 FPS Game Loop
+    LaunchedEffect(Unit) {
+        var lastTime = System.nanoTime()
+        var spawnTimer = 0f
+
+        while (timeLeftSec > 0f) {
+            delay(16) // ~60 FPS
+            val now = System.nanoTime()
+            val dt = ((now - lastTime) / 1_000_000_000f).coerceIn(0.005f, 0.05f)
+            lastTime = now
+
+            timeLeftSec = (timeLeftSec - dt).coerceAtLeast(0f)
+
+            // Speed multiplier: starts at 1.0x, accelerates smoothly to 5.0x by the end!
+            val progress = (10f - timeLeftSec) / 10f
+            val currentSpeedMultiplier = 1f + progress * 4.0f // 1.0x -> 5.0x
+
+            // Advance psychedelic ring expansion phase
+            ringPhase += dt * 0.4f * currentSpeedMultiplier
+
+            // Spawn new emojis continuously
+            spawnTimer += dt
+            val spawnInterval = (0.24f / (1f + progress * 0.8f)).coerceAtLeast(0.12f)
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0f
+                val candidateEmojis = listOf("😴", "💤", "🛌")
+                val angle = Random.nextFloat() * 2f * PI.toFloat()
+                val speed = (Random.nextFloat() * 160f + 120f) * (1f + progress * 0.5f)
+                val fadeDur = Random.nextFloat() * 0.3f + 0.15f // 0.15s - 0.45s
+
+                emojis.add(
+                    ActiveFlyingEmoji(
+                        id = nextEmojiId++,
+                        emoji = candidateEmojis.random(),
+                        angle = angle,
+                        speed = speed,
+                        fadeDurationSec = fadeDur
+                    )
+                )
+            }
+
+            // Update flying emojis positions and alpha
+            val iterator = emojis.iterator()
+            while (iterator.hasNext()) {
+                val e = iterator.next()
+                if (e.isHit || e.currentDistDp > 500f) {
+                    iterator.remove()
+                } else {
+                    e.ageSec += dt
+                    e.currentDistDp += e.speed * dt
+                }
+            }
+        }
+
+        // 10s Elapsed -> Game Over!
+        isGameOver = true
         SoundEffects.playGunshot(context)
         if (score > bestScore) {
             bestScore = score
             prefs.edit().putInt("key_best_egg_score", bestScore).apply()
         }
 
-        // Spawn confetti fireworks in front
-        val colors = listOf(
-            Color(0xFFFF5722), Color(0xFFFFEB3B), Color(0xFF4CAF50),
-            Color(0xFF2196F3), Color(0xFFE91E63), Color(0xFF9C27B0)
+        // Spawn confetti fireworks
+        val confettiColors = listOf(
+            Color(0xFFFF007F), Color(0xFF00F0FF), Color(0xFF76FF03),
+            Color(0xFFFFD600), Color(0xFFFF6D00), Color(0xFF7B1FA2)
         )
-        for (i in 0..150) {
+        for (i in 0..160) {
             val angle = Random.nextFloat() * 2f * PI.toFloat()
-            val speed = Random.nextFloat() * 14f + 5f
+            val speed = Random.nextFloat() * 14f + 4f
             confettiList.add(
                 ConfettiParticle(
                     x = 0.5f,
-                    y = 0.35f,
+                    y = 0.4f,
                     vx = cos(angle) * speed,
-                    vy = sin(angle) * speed - 6f,
-                    color = colors.random(),
+                    vy = sin(angle) * speed - 5f,
+                    color = confettiColors.random(),
                     size = Random.nextFloat() * 9f + 4f
                 )
             )
         }
-    }
 
-    // Emoji spawner loop
-    LaunchedEffect(isGameOver) {
-        if (!isGameOver) {
-            val candidateEmojis = listOf("😴", "💤", "🛌")
-            while (!isGameOver) {
-                delay(220)
-                val angle = Random.nextFloat() * 2f * PI.toFloat()
-                val speed = Random.nextFloat() * 160f + 110f
-                emojisList.add(
-                    FlyingEmoji(
-                        id = nextEmojiId++,
-                        emoji = candidateEmojis.random(),
-                        angle = angle,
-                        speed = speed,
-                        spawnTime = System.currentTimeMillis()
-                    )
-                )
-
-                // Clean up emojis that traveled out of screen bounds (>3.5s)
-                val now = System.currentTimeMillis()
-                emojisList.removeAll { now - it.spawnTime > 3500L || it.isHit }
+        // Confetti physics loop
+        while (true) {
+            delay(16)
+            confettiList.forEach { p ->
+                p.x += p.vx / 400f
+                p.y += p.vy / 800f
+                p.vy += 0.25f // gravity
             }
         }
     }
 
-    // Dynamic Warp Tunnel Speed (Starts slow, gets faster over the 10 seconds)
-    val elapsedProgress = (10 - timeLeftSec) / 10f
-    val baseDurationMs = (1400 - elapsedProgress * 800).toInt().coerceAtLeast(400)
-
-    val infiniteTransition = rememberInfiniteTransition(label = "warpTunnel")
-    val warpPhase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(baseDurationMs, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "phase"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // Initial background is pure white
+            .background(Color.White) // Pure white initial background
             .pointerInput(isGameOver) {
                 if (!isGameOver) {
                     detectTapGestures { tapOffset ->
-                        val now = System.currentTimeMillis()
                         val w = size.width.toFloat()
                         val h = size.height.toFloat()
                         val cx = w / 2f
                         val cy = h / 2f
 
-                        // Check if an emoji was tapped
-                        for (emoji in emojisList) {
-                            if (emoji.isHit) continue
-                            val elapsed = (now - emoji.spawnTime) / 1000f
-                            val dist = emoji.speed * elapsed
-                            val ex = cx + cos(emoji.angle) * dist
-                            val ey = cy + sin(emoji.angle) * dist
-                            val touchRadius = 48.dp.toPx()
+                        // Check hit with active flying emojis
+                        for (e in emojis) {
+                            if (e.isHit) continue
+                            val distPx = e.currentDistDp * density
+                            val ex = cx + distPx * cos(e.angle)
+                            val ey = cy + distPx * sin(e.angle)
+                            val touchRadius = 52.dp.toPx()
 
                             if (hypot(tapOffset.x - ex, tapOffset.y - ey) <= touchRadius) {
-                                emoji.isHit = true
+                                e.isHit = true
                                 score++
                                 SoundEffects.playGunshot(context)
                                 break
@@ -172,55 +190,69 @@ fun EasterEggGameScreen(
                 }
             }
     ) {
-        // 1. Soft Blurred Colored Rings Surging Outward from Center (Starts slow, gets faster)
+        // 1. Organic Psychedelic Color Rings (Surging outward, very thick, soft/blurred, accelerates 5x)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            val maxR = hypot(cx, cy) * 1.15f
+            val maxR = hypot(cx, cy) * 1.2f
 
-            val ringCount = 7
+            // High-saturation psychedelic colors (吃毒蘑菇般的迷幻感)
             val ringColors = listOf(
-                Color(0xFF93C5FD), // Soft baby blue
-                Color(0xFFC4B5FD), // Soft lavender
-                Color(0xFFFBCFE8), // Soft pastel pink
-                Color(0xFFA7F3D0)  // Soft mint
+                Color(0xFFFF007F), // Neon Magenta
+                Color(0xFF00F0FF), // Vivid Cyan
+                Color(0xFF76FF03), // Acid Lime
+                Color(0xFF7B1FA2), // Electric Violet
+                Color(0xFFFF6D00), // Neon Orange
+                Color(0xFFFFEA00)  // Bright Yellow
             )
 
-            for (r in 0 until ringCount) {
-                val progress = (warpPhase + r.toFloat() / ringCount) % 1f
-                val radius = (progress * progress) * maxR
-                val alpha = (sin(progress * PI.toFloat())).coerceIn(0f, 1f) * 0.45f
-                val strokeWidth = (progress * 22f + 4f)
+            val ringCount = 8
+            val numPoints = 40
+            val wobblePhase = ringPhase * 2f
 
-                drawCircle(
+            for (r in 0 until ringCount) {
+                val p = (ringPhase + r.toFloat() / ringCount) % 1f
+                val radius = (p * p) * maxR // Perspective expansion
+                val alpha = (sin(p * PI.toFloat())).coerceIn(0f, 1f) * 0.42f
+                val strokeW = (p * 50f + 16f) * density // Very thick stroke
+
+                val path = Path()
+                for (i in 0 until numPoints) {
+                    val theta = i * (2f * PI.toFloat() / numPoints)
+                    // Organic irregular psychedelic wobble
+                    val wobble = 1f + 0.12f * sin(3f * theta + wobblePhase + r) + 0.07f * cos(5f * theta - wobblePhase)
+                    val rEff = radius * wobble
+                    val px = cx + rEff * cos(theta)
+                    val py = cy + rEff * sin(theta)
+                    if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
+                }
+                path.close()
+
+                drawPath(
+                    path = path,
                     color = ringColors[r % ringColors.size].copy(alpha = alpha),
-                    radius = radius,
-                    center = Offset(cx, cy),
-                    style = Stroke(width = strokeWidth)
+                    style = Stroke(width = strokeW)
                 )
             }
         }
 
-        // 2. Flying Emojis (Smooth transition from 0% transparent to 100% visible while moving outward)
-        val now = System.currentTimeMillis()
+        // 2. Flying Emojis (Smooth continuous 60fps flight, fades in from 0% to 100% within 0.15-0.45s)
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val cx = maxWidth / 2
             val cy = maxHeight / 2
 
-            emojisList.forEach { emoji ->
-                if (!emoji.isHit) {
-                    val elapsed = (now - emoji.spawnTime) / 1000f
-                    val distDp = (emoji.speed * elapsed).dp
-                    val ex = cx + (distDp.value * cos(emoji.angle)).dp
-                    val ey = cy + (distDp.value * sin(emoji.angle)).dp
+            emojis.forEach { e ->
+                if (!e.isHit) {
+                    val ex = cx + (e.currentDistDp * cos(e.angle)).dp
+                    val ey = cy + (e.currentDistDp * sin(e.angle)).dp
 
-                    // Alpha transitions from 0.0 (completely transparent at center) to 1.0 (fully visible)
-                    val alpha = (elapsed / 0.55f).coerceIn(0f, 1f)
-                    val scaleFactor = (0.6f + elapsed * 1.0f).coerceIn(0.6f, 2.6f)
-                    val fontSize = (26 * scaleFactor).sp
+                    // Alpha smoothly transitions from 0f to 1f within fadeDurationSec
+                    val alpha = (e.ageSec / e.fadeDurationSec).coerceIn(0f, 1f)
+                    val scaleFactor = (0.7f + (e.currentDistDp / 180f)).coerceIn(0.7f, 2.6f)
+                    val fontSize = (24 * scaleFactor).sp
 
                     Text(
-                        text = emoji.emoji,
+                        text = e.emoji,
                         fontSize = fontSize,
                         modifier = Modifier
                             .offset(x = ex - (fontSize.value / 2).dp, y = ey - (fontSize.value / 2).dp)
@@ -230,25 +262,7 @@ fun EasterEggGameScreen(
             }
         }
 
-        // 3. Confetti Fireworks Layer IN FRONT
-        if (isGameOver && confettiList.isNotEmpty()) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                confettiList.forEach { p ->
-                    p.x += p.vx / w
-                    p.y += p.vy / h
-                    p.vy += 0.22f // Gravity pull
-                    drawCircle(
-                        color = p.color,
-                        radius = p.size,
-                        center = Offset(p.x * w, p.y * h)
-                    )
-                }
-            }
-        }
-
-        // 4. Top HUD Bar: Countdown & Hit Counter
+        // 3. Top HUD: Real-time Score & Countdown Timer
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -260,7 +274,7 @@ fun EasterEggGameScreen(
             Surface(
                 shape = RoundedCornerShape(percent = 50),
                 color = MaterialTheme.colorScheme.primaryContainer,
-                shadowElevation = 4.dp
+                shadowElevation = 6.dp
             ) {
                 Text(
                     text = "🎯 击中: $score",
@@ -271,22 +285,23 @@ fun EasterEggGameScreen(
                 )
             }
 
+            val remainingInt = ceil(timeLeftSec).toInt()
             Surface(
                 shape = RoundedCornerShape(percent = 50),
-                color = if (timeLeftSec <= 3) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
-                shadowElevation = 4.dp
+                color = if (remainingInt <= 3) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
+                shadowElevation = 6.dp
             ) {
                 Text(
-                    text = "⏳ ${timeLeftSec}s",
+                    text = "⏳ ${remainingInt}s",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (timeLeftSec <= 3) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (remainingInt <= 3) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                 )
             }
         }
 
-        // 5. Game Over Celebration Dialog with Centered BIG Button
+        // 4. Results Dialog with Big Centered Button
         if (isGameOver) {
             AlertDialog(
                 onDismissRequest = onDismissGame,
@@ -324,7 +339,7 @@ fun EasterEggGameScreen(
                     }
                 },
                 confirmButton = {
-                    // Big centered confirm button ("太棒了")
+                    // Big, prominent, centered button ("太棒了")
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -336,8 +351,8 @@ fun EasterEggGameScreen(
                             shape = RoundedCornerShape(percent = 50),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier
-                                .fillMaxWidth(0.85f)
-                                .height(54.dp)
+                                .fillMaxWidth(0.9f)
+                                .height(56.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.easter_egg_confirm),
@@ -349,6 +364,23 @@ fun EasterEggGameScreen(
                     }
                 }
             )
+        }
+
+        // 5. Confetti Fireworks Layer IN FRONT OF the Dialog
+        if (isGameOver && confettiList.isNotEmpty()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                confettiList.forEach { p ->
+                    p.x += p.vx / 400f
+                    p.y += p.vy / 800f
+                    drawCircle(
+                        color = p.color,
+                        radius = p.size,
+                        center = Offset(p.x * w, p.y * h)
+                    )
+                }
+            }
         }
     }
 }

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,8 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -91,6 +94,7 @@ fun NapRouletteScreen(
     var isZzzVisible by remember { mutableStateOf(false) }
     var zzzXFraction by remember { mutableFloatStateOf(0.5f) }
     var zzzYFraction by remember { mutableFloatStateOf(0.4f) }
+    var zzzBounds by remember { mutableStateOf<Rect?>(null) }
     var isEasterEggActive by remember { mutableStateOf(false) }
 
     // Silently track elapsed sleep time in background
@@ -120,11 +124,31 @@ fun NapRouletteScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(isZzzVisible) {
+                    .pointerInput(isZzzVisible, zzzBounds) {
                         if (isZzzVisible) {
-                            detectTapGestures {
-                                // User tapped anywhere outside 💤 -> hide it
-                                isZzzVisible = false
+                            awaitPointerEventScope {
+                                while (isZzzVisible) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    val firstPressed = event.changes.firstOrNull { it.pressed }
+                                    if (firstPressed != null) {
+                                        val pos = firstPressed.position
+                                        val bounds = zzzBounds
+                                        if (bounds != null && bounds.contains(pos)) {
+                                            // Clicked on 💤 -> Enter Easter egg!
+                                            firstPressed.consume()
+                                            isZzzVisible = false
+                                            SoundEffects.playCylinderSpin(context)
+                                            splitCurtainOpen = true
+                                            coroutineScope.launch {
+                                                delay(380)
+                                                isEasterEggActive = true
+                                            }
+                                        } else {
+                                            // Clicked outside 💤 -> Hide 💤, do NOT consume, let click pass to children!
+                                            isZzzVisible = false
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -255,7 +279,7 @@ fun NapRouletteScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // 1-Minute Increment Wheel Picker (1m .. 60m)
+                            // 1-Minute Increment Wheel Picker (10s test + 1m..60m)
                             VerticalDurationWheelPicker(
                                 options = napOptions,
                                 selectedSeconds = session.targetDurationSec,
@@ -471,52 +495,35 @@ fun NapRouletteScreen(
                     }
                 }
 
-                // Easter Egg Floating 💤 Trigger with Full-Screen Tap Interceptor
+                // Easter Egg Floating 💤 Trigger (Track bounds so clicks outside dismiss non-blockingly)
                 if (isZzzVisible) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(Unit) {
-                                detectTapGestures {
-                                    // User tapped anywhere outside 💤 -> hide it immediately!
-                                    isZzzVisible = false
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val posX = maxWidth * zzzXFraction
+                        val posY = maxHeight * zzzYFraction
+
+                        val infiniteFloat = rememberInfiniteTransition(label = "zzzFloat")
+                        val zzzScale by infiniteFloat.animateFloat(
+                            initialValue = 1f,
+                            targetValue = 1.35f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(600, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "scale"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .offset(x = posX, y = posY)
+                                .onGloballyPositioned { coordinates ->
+                                    zzzBounds = coordinates.boundsInParent()
                                 }
-                            }
-                    ) {
-                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                            val posX = maxWidth * zzzXFraction
-                            val posY = maxHeight * zzzYFraction
-
-                            val infiniteFloat = rememberInfiniteTransition(label = "zzzFloat")
-                            val zzzScale by infiniteFloat.animateFloat(
-                                initialValue = 1f,
-                                targetValue = 1.35f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(600, easing = FastOutSlowInEasing),
-                                    repeatMode = RepeatMode.Reverse
-                                ),
-                                label = "scale"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = posX, y = posY)
-                                    .scale(zzzScale)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f))
-                                    .clickable {
-                                        SoundEffects.playCylinderSpin(context)
-                                        isZzzVisible = false
-                                        splitCurtainOpen = true
-                                        coroutineScope.launch {
-                                            delay(400)
-                                            isEasterEggActive = true
-                                        }
-                                    }
-                                    .padding(12.dp)
-                            ) {
-                                Text(text = "💤", fontSize = 30.sp)
-                            }
+                                .scale(zzzScale)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f))
+                                .padding(12.dp)
+                        ) {
+                            Text(text = "💤", fontSize = 32.sp)
                         }
                     }
                 }

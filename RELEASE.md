@@ -46,8 +46,8 @@ Brief Clock (讲解时) 正式发布 **Brief Clock (讲解时)-v0.1.3**！本次
 
 | 文件名 | 文件类型 | 大小 | SHA256 校验和 |
 |---|---|---|---|
-| `app/build/outputs/apk/debug/app-debug.apk` | Debug APK | ~11MB | `ba3ce2ed1244d75949196727458f994082d11d343d65a064d72b7c21a0b4314a` |
-| `app/build/outputs/apk/release/app-release-unsigned.apk` | Release APK | ~7.6MB | `1aea2cef964b8cc333be6455ca6c677095ea098ebf0509d13595c5e7845a93c2` |
+| `app/build/outputs/apk/debug/app-debug.apk` | Debug APK | ~11MB | `cd5544d2b055b3fe17c9ab9acb4f5755306eecbe98f18fa41b71dcc4b694544c` |
+| `app/build/outputs/apk/release/app-release-unsigned.apk` | Release APK | ~7.6MB | `9b1068486d40334e198deb9ce0ec27b396faa5d7f0537ade842c34fe7de56098` |
 
 ---
 
