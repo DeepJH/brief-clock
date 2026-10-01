@@ -125,10 +125,9 @@ class MainActivity : ComponentActivity() {
                                     onClick = { selectedTab = BottomTab.ROULETTE },
                                     icon = {
                                         Icon(
-                                            painter = painterResource(R.drawable.ic_emoji_revolver),
+                                            AppIcons.Revolver,
                                             contentDescription = stringResource(R.string.nav_roulette),
-                                            modifier = Modifier.size(24.dp),
-                                            tint = Color.Unspecified
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     },
                                     label = { Text(stringResource(R.string.nav_roulette)) },

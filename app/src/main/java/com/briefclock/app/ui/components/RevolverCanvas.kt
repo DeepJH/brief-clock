@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
@@ -19,12 +19,11 @@ import kotlin.math.*
 
 /**
  * Authentic 2D Revolver Canvas Component.
- * Based on classic revolver vector from Wikimedia Commons (CC BY-SA 3.0 / F l a n k e r).
  * 100% minimalist solid flat colors (no slide, no box magazine).
  * Anatomically complete with individual moving parts:
- * - Movable cocking hammer (spurs back when cocked).
- * - Movable curved silver trigger (pulls back toward grip when fired).
- * - Dynamic rotating cylinder flutes on a smooth base drum.
+ * - Movable cocking hammer (pivots back when cocked).
+ * - Movable curved silver trigger (concave front welcomes finger, pulls back toward grip when fired).
+ * - Dynamic rotating cylinder flutes on a 100% smooth base drum.
  * - Upward muzzle-flip recoil and leftmost muzzle flash starburst.
  */
 @Composable
@@ -39,7 +38,6 @@ fun RevolverCanvas(
     val framePainter = painterResource(R.drawable.rev_layer_frame)
     val hammerPainter = painterResource(R.drawable.rev_layer_hammer)
     val triggerPainter = painterResource(R.drawable.rev_layer_trigger)
-    val flutesPainter = painterResource(R.drawable.rev_layer_flutes)
 
     Canvas(
         modifier = modifier
@@ -62,10 +60,10 @@ fun RevolverCanvas(
 
         // Recoil transform: Pivoting around the shooter's palm/grip handle (right side)
         // Upward muzzle flip (muzzle rises UPWARD) + backward kickback into hand
-        val gripPivotX = startX + 880f * scale
+        val gripPivotX = startX + 930f * scale
         val gripPivotY = startY + 480f * scale
 
-        val recoilRot = recoilAmount * 16f // Clockwise rotation around right grip flips LEFT muzzle UPWARD!
+        val recoilRot = recoilAmount * 15f // Clockwise rotation around right grip flips LEFT muzzle UPWARD!
         val recoilTx = recoilAmount * 24f  // Kickback into hand
         val recoilTy = -recoilAmount * 12f // Upward lift
 
@@ -74,9 +72,9 @@ fun RevolverCanvas(
                 translate(left = startX, top = startY) {
                     val layerSize = Size(renderW, renderH)
 
-                    // 1. Hammer Layer (Pivoting at base x=760*scale, y=240*scale)
-                    val hammerPivotX = 760f * scale
-                    val hammerPivotY = 240f * scale
+                    // 1. Hammer Layer (Pivoting at base x=808*scale, y=194*scale)
+                    val hammerPivotX = 808f * scale
+                    val hammerPivotY = 194f * scale
                     val hammerAngle = if (hammerCocked) 22f else 0f
                     rotate(degrees = hammerAngle, pivot = Offset(hammerPivotX, hammerPivotY)) {
                         with(hammerPainter) {
@@ -84,34 +82,65 @@ fun RevolverCanvas(
                         }
                     }
 
-                    // 2. Base Frame Layer (Frame, Barrel, Ejector Rod, Crane, Smooth Cylinder Base, Grip)
-                    with(framePainter) {
-                        draw(size = layerSize)
-                    }
-
-                    // 3. Trigger Layer (Pivoting at top x=640*scale, y=300*scale, pulls back towards grip)
-                    val triggerPivotX = 640f * scale
-                    val triggerPivotY = 300f * scale
-                    val triggerAngle = if (triggerPulled) 18f else 0f
+                    // 2. Trigger Layer (Pivoting at top x=580*scale, y=275*scale, pulls back towards grip)
+                    // Note: Rotating counter-clockwise (-16f) pulls trigger tip towards the grip (to the right)
+                    val triggerPivotX = 580f * scale
+                    val triggerPivotY = 275f * scale
+                    val triggerAngle = if (triggerPulled) -16f else 0f
                     rotate(degrees = triggerAngle, pivot = Offset(triggerPivotX, triggerPivotY)) {
                         with(triggerPainter) {
                             draw(size = layerSize)
                         }
                     }
 
-                    // 4. Cylinder Flutes Layer (The cut-out grooves that roll across the smooth cylinder drum)
+                    // 3. Base Frame Layer (Frame, Barrel, Ejector Rod, Crane, Smooth Cylinder Base, Grip)
+                    // Drawn on top of hammer and trigger hubs so seams are hidden inside the frame
+                    with(framePainter) {
+                        draw(size = layerSize)
+                    }
+
+                    // 4. Cylinder Flutes Layer (Dynamic 6 flutes rolling across the smooth cylinder drum)
+                    val cylX1 = 524f * scale
+                    val cylX2 = 672f * scale
+                    val cylCenterY = 180f * scale
+                    val cylRy = 76f * scale
                     val rad = cylinderAngle * (PI.toFloat() / 180f)
-                    val fluteOffsetY = sin(rad) * 12f * scale
-                    translate(left = 0f, top = fluteOffsetY) {
-                        with(flutesPainter) {
-                            draw(size = layerSize)
+
+                    for (i in 0 until 6) {
+                        val phase = rad + i * (2f * PI.toFloat() / 6f)
+                        val sinP = sin(phase)
+                        val cosP = cos(phase)
+
+                        if (cosP > -0.15f) {
+                            val fluteY = cylCenterY + sinP * cylRy
+                            val halfH = max(2f * scale, 11f * scale * cosP)
+                            val alphaDark = 0.86f * min(1f, cosP + 0.35f)
+                            val alphaLight = 0.55f * min(1f, cosP + 0.35f)
+
+                            // Recessed groove shadow
+                            drawRoundRect(
+                                color = Color(0xFF111827).copy(alpha = alphaDark),
+                                topLeft = Offset(cylX1 + 6f * scale, fluteY - halfH),
+                                size = Size(cylX2 - cylX1 - 12f * scale, halfH * 2f),
+                                cornerRadius = CornerRadius(halfH, halfH)
+                            )
+
+                            // Bevel specular highlight inside groove
+                            if (halfH >= 4f * scale) {
+                                drawLine(
+                                    color = Color.White.copy(alpha = alphaLight),
+                                    start = Offset(cylX1 + 14f * scale, fluteY - halfH + 2f * scale),
+                                    end = Offset(cylX2 - 14f * scale, fluteY - halfH + 2f * scale),
+                                    strokeWidth = 2f * scale
+                                )
+                            }
                         }
                     }
 
-                    // 5. Muzzle Flash Burst at the Leftmost Muzzle Tip (x=98*scale, y=115*scale)
+                    // 5. Muzzle Flash Burst at the Leftmost Muzzle Tip (x=99*scale, y=130*scale)
                     if (muzzleFlash) {
-                        val muzzleX = 98f * scale
-                        val muzzleY = 115f * scale
+                        val muzzleX = 99f * scale
+                        val muzzleY = 130f * scale
 
                         // Large multi-spiked explosive starburst erupting to the left
                         val outerFlame = Path().apply {

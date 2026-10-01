@@ -66,6 +66,16 @@ fun EasterEggGameScreen(
     // Psychedelic warp wave animation phase
     var ringPhase by remember { mutableFloatStateOf(0f) }
 
+    // Completely random colors with various hues, saturations, and brightness
+    val psychedelicColors = remember {
+        List(16) {
+            val hue = Random.nextFloat() * 360f
+            val sat = Random.nextFloat() * 0.5f + 0.5f // 0.5 - 1.0
+            val bri = Random.nextFloat() * 0.5f + 0.5f // 0.5 - 1.0
+            Color.hsv(hue, sat, bri)
+        }
+    }
+
     // 60 FPS Game Loop
     LaunchedEffect(Unit) {
         var lastTime = System.nanoTime()
@@ -79,12 +89,12 @@ fun EasterEggGameScreen(
 
             timeLeftSec = (timeLeftSec - dt).coerceAtLeast(0f)
 
-            // Speed multiplier: starts at 1.0x, accelerates smoothly to 5.0x by the end!
+            // Speed multiplier: starts at 0.5x (halved initial speed), accelerates to 1.5x (3x initial speed!)
             val progress = (10f - timeLeftSec) / 10f
-            val currentSpeedMultiplier = 1f + progress * 4.0f // 1.0x -> 5.0x
+            val currentSpeedMultiplier = 0.5f + progress * 1.0f // 0.5x -> 1.5x (3x of initial)
 
             // Advance psychedelic ring expansion phase
-            ringPhase += dt * 0.4f * currentSpeedMultiplier
+            ringPhase += dt * 0.28f * currentSpeedMultiplier
 
             // Spawn new emojis continuously
             spawnTimer += dt
@@ -94,7 +104,7 @@ fun EasterEggGameScreen(
                 val candidateEmojis = listOf("😴", "💤", "🛌")
                 val angle = Random.nextFloat() * 2f * PI.toFloat()
                 val speed = (Random.nextFloat() * 160f + 120f) * (1f + progress * 0.5f)
-                val fadeDur = Random.nextFloat() * 0.3f + 0.15f // 0.15s - 0.45s
+                val fadeDur = Random.nextFloat() * 0.3f + 0.15f // 0.15s - 0.45s smooth fade
 
                 emojis.add(
                     ActiveFlyingEmoji(
@@ -128,22 +138,23 @@ fun EasterEggGameScreen(
             prefs.edit().putInt("key_best_egg_score", bestScore).apply()
         }
 
-        // Spawn confetti fireworks
-        val confettiColors = listOf(
+        // Spawn confetti celebration fireworks
+        val confettiPalette = listOf(
             Color(0xFFFF007F), Color(0xFF00F0FF), Color(0xFF76FF03),
-            Color(0xFFFFD600), Color(0xFFFF6D00), Color(0xFF7B1FA2)
+            Color(0xFFFFD600), Color(0xFFFF6D00), Color(0xFF7B1FA2),
+            Color(0xFFFF1744), Color(0xFF00E676), Color(0xFFFFEA00)
         )
-        for (i in 0..160) {
+        for (i in 0..180) {
             val angle = Random.nextFloat() * 2f * PI.toFloat()
-            val speed = Random.nextFloat() * 14f + 4f
+            val speed = Random.nextFloat() * 16f + 4f
             confettiList.add(
                 ConfettiParticle(
-                    x = 0.5f,
-                    y = 0.4f,
+                    x = 0.5f + (Random.nextFloat() - 0.5f) * 0.2f,
+                    y = 0.45f + (Random.nextFloat() - 0.5f) * 0.2f,
                     vx = cos(angle) * speed,
-                    vy = sin(angle) * speed - 5f,
-                    color = confettiColors.random(),
-                    size = Random.nextFloat() * 9f + 4f
+                    vy = sin(angle) * speed - 6f, // Initial upward burst
+                    color = confettiPalette.random(),
+                    size = Random.nextFloat() * 9f + 6f
                 )
             )
         }
@@ -152,9 +163,9 @@ fun EasterEggGameScreen(
         while (true) {
             delay(16)
             confettiList.forEach { p ->
-                p.x += p.vx / 400f
-                p.y += p.vy / 800f
-                p.vy += 0.25f // gravity
+                p.x += p.vx / 380f
+                p.y += p.vy / 750f
+                p.vy += 0.28f // gravity
             }
         }
     }
@@ -190,37 +201,28 @@ fun EasterEggGameScreen(
                 }
             }
     ) {
-        // 1. Organic Psychedelic Color Rings (Surging outward, very thick, soft/blurred, accelerates 5x)
+        // 1. Organic Psychedelic Color Rings (数量减半至4个，极强模糊扩散效果，完全随机高饱和颜色与亮度)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            val maxR = hypot(cx, cy) * 1.2f
+            val maxR = hypot(cx, cy) * 1.25f
 
-            // High-saturation psychedelic colors (吃毒蘑菇般的迷幻感)
-            val ringColors = listOf(
-                Color(0xFFFF007F), // Neon Magenta
-                Color(0xFF00F0FF), // Vivid Cyan
-                Color(0xFF76FF03), // Acid Lime
-                Color(0xFF7B1FA2), // Electric Violet
-                Color(0xFFFF6D00), // Neon Orange
-                Color(0xFFFFEA00)  // Bright Yellow
-            )
-
-            val ringCount = 8
+            // Reduced ring count by half (4 rings instead of 8)
+            val ringCount = 4
             val numPoints = 40
             val wobblePhase = ringPhase * 2f
 
             for (r in 0 until ringCount) {
                 val p = (ringPhase + r.toFloat() / ringCount) % 1f
                 val radius = (p * p) * maxR // Perspective expansion
-                val alpha = (sin(p * PI.toFloat())).coerceIn(0f, 1f) * 0.42f
-                val strokeW = (p * 50f + 16f) * density // Very thick stroke
+                val baseAlpha = (sin(p * PI.toFloat())).coerceIn(0f, 1f) * 0.48f
+                val baseStrokeW = (p * 70f + 24f) * density // Extra thick stroke
 
                 val path = Path()
                 for (i in 0 until numPoints) {
                     val theta = i * (2f * PI.toFloat() / numPoints)
                     // Organic irregular psychedelic wobble
-                    val wobble = 1f + 0.12f * sin(3f * theta + wobblePhase + r) + 0.07f * cos(5f * theta - wobblePhase)
+                    val wobble = 1f + 0.14f * sin(3f * theta + wobblePhase + r) + 0.08f * cos(5f * theta - wobblePhase)
                     val rEff = radius * wobble
                     val px = cx + rEff * cos(theta)
                     val py = cy + rEff * sin(theta)
@@ -228,11 +230,20 @@ fun EasterEggGameScreen(
                 }
                 path.close()
 
-                drawPath(
-                    path = path,
-                    color = ringColors[r % ringColors.size].copy(alpha = alpha),
-                    style = Stroke(width = strokeW)
-                )
+                val ringColor = psychedelicColors[(r + (ringPhase * 4).toInt()).mod(psychedelicColors.size)]
+
+                // Very strong soft blur diffusion effect by layering multi-step graduated wide strokes
+                val blurSteps = 5
+                for (step in blurSteps downTo 1) {
+                    val expandFactor = 1f + (step - 1) * 0.45f // expands stroke up to 2.8x
+                    val stepAlpha = (baseAlpha / (step * 0.8f)).coerceIn(0f, 1f)
+
+                    drawPath(
+                        path = path,
+                        color = ringColor.copy(alpha = stepAlpha),
+                        style = Stroke(width = baseStrokeW * expandFactor)
+                    )
+                }
             }
         }
 
@@ -262,12 +273,11 @@ fun EasterEggGameScreen(
             }
         }
 
-        // 3. Top HUD: Real-time Score & Countdown Timer
+        // 3. Top HUD: Real-time hit score and countdown timer
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -301,57 +311,59 @@ fun EasterEggGameScreen(
             }
         }
 
-        // 4. Results Dialog with Big Centered Button
+        // 4. Results Dialog and Confetti Celebration
+        // The celebration confetti fireworks is placed IN FRONT OF the results popup!
         if (isGameOver) {
-            AlertDialog(
-                onDismissRequest = onDismissGame,
-                shape = RoundedCornerShape(24.dp),
-                title = {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            // Semi-transparent backdrop scrim and result card
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.55f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp,
+                    shadowElevation = 16.dp,
+                    modifier = Modifier
+                        .fillMaxWidth(0.88f)
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
                         Text(
                             text = "🎉 " + stringResource(R.string.easter_egg_result_title),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                    }
-                },
-                text = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = String.format(stringResource(R.string.easter_egg_score), score),
-                            fontSize = 28.sp,
+                            fontSize = 32.sp,
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = String.format(stringResource(R.string.easter_egg_best), bestScore),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    }
-                },
-                confirmButton = {
-                    // Big, prominent, centered button ("太棒了")
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        // Big, centered confirmation button ("太棒了")
                         Button(
                             onClick = onDismissGame,
                             shape = RoundedCornerShape(percent = 50),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier
-                                .fillMaxWidth(0.9f)
+                                .fillMaxWidth(0.92f)
                                 .height(56.dp)
                         ) {
                             Text(
@@ -363,22 +375,20 @@ fun EasterEggGameScreen(
                         }
                     }
                 }
-            )
-        }
+            }
 
-        // 5. Confetti Fireworks Layer IN FRONT OF the Dialog
-        if (isGameOver && confettiList.isNotEmpty()) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                confettiList.forEach { p ->
-                    p.x += p.vx / 400f
-                    p.y += p.vy / 800f
-                    drawCircle(
-                        color = p.color,
-                        radius = p.size,
-                        center = Offset(p.x * w, p.y * h)
-                    )
+            // Confetti Fireworks Layer explicitly rendered IN FRONT OF the Dialog card!
+            if (confettiList.isNotEmpty()) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    confettiList.forEach { p ->
+                        drawCircle(
+                            color = p.color,
+                            radius = p.size,
+                            center = Offset(p.x * w, p.y * h)
+                        )
+                    }
                 }
             }
         }

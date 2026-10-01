@@ -232,6 +232,9 @@ fun NapRouletteScreen(
                                         coroutineScope.launch {
                                             SoundEffects.playGunshot(context)
                                             triggerPulled = true
+                                            hammerCocked = true
+                                            delay(30)
+                                            hammerCocked = false
                                             muzzleFlash = true
                                             recoilAnim.snapTo(0f)
                                             recoilAnim.animateTo(1f, tween(50))
