@@ -4,28 +4,27 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import kotlin.math.min
+import com.briefclock.app.R
+import kotlin.math.*
 
 /**
- * Authentic 2D Vector Revolver Canvas.
- * Based on open-source vector revolver from Game-Icons.net (CC-BY 3.0 / Lorc).
- * Strictly anatomically correct revolver:
- * - NO slide (绝无套筒)
- * - NO box magazine (绝无弹匣)
- * - Features authentic 6-flute cylinder, hammer, curved trigger, underlug, and contoured grip.
- * - Interactive recoil kickback, spinning cylinder animation, and muzzle flash.
+ * Authentic 2D Revolver Canvas Component.
+ * Based on open-source classic revolver vector from Wikimedia Commons (CC BY-SA 3.0 / F l a n k e r).
+ * Anatomically complete revolver:
+ * - 6-chamber cylinder drum with flutes, swing yoke crane, and ejector rod.
+ * - Thumb-cocking hammer, curved silver trigger, and textured grip handle.
+ * - Absolutely NO slide (绝无套筒), NO box magazine (绝无弹匣).
+ * - Upward muzzle-flip recoil, moving cylinder flutes on spin, and muzzle flash burst.
  */
 @Composable
 fun RevolverCanvas(
@@ -36,10 +35,7 @@ fun RevolverCanvas(
     recoilAmount: Float = 0f,
     muzzleFlash: Boolean = false
 ) {
-    // Parse vector path once
-    val revolverPath = remember {
-        PathParser().parsePathString(REVOLVER_SVG_D).toPath()
-    }
+    val gunPainter = painterResource(R.drawable.revolver_authentic)
 
     Canvas(
         modifier = modifier
@@ -48,86 +44,90 @@ fun RevolverCanvas(
     ) {
         val w = size.width
         val h = size.height
-        val cx = w * 0.50f
-        val cy = h * 0.48f
 
-        // Recoil transform: kickback translation + upward muzzle flip
-        val recoilTx = -recoilAmount * 32f
-        val recoilTy = -recoilAmount * 16f
-        val recoilRot = -recoilAmount * 14f
+        // Gun image native aspect ratio: 1200 x 812
+        val imgW = 1200f
+        val imgH = 812f
+        val scale = min((w * 0.94f) / imgW, (h * 0.94f) / imgH)
+        val renderW = imgW * scale
+        val renderH = imgH * scale
+
+        // Center on screen
+        val startX = (w - renderW) / 2f
+        val startY = (h - renderH) / 2f
+
+        // Recoil transform: Pivoting around the shooter's palm/grip handle (right side)
+        // Upward muzzle flip (muzzle rises UPWARD) + backward kickback into hand
+        val gripPivotX = startX + renderW * 0.82f
+        val gripPivotY = startY + renderH * 0.65f
+
+        val recoilRot = -recoilAmount * 16f // Clockwise rotation around right grip flips LEFT muzzle UPWARD!
+        val recoilTx = recoilAmount * 22f   // Kickback into hand
+        val recoilTy = -recoilAmount * 10f  // Upward lift
 
         translate(left = recoilTx, top = recoilTy) {
-            rotate(degrees = recoilRot, pivot = Offset(cx + 80f, cy + 60f)) {
-                // Scale factor from 512x512 to Canvas dimensions
-                val s = min(w / 460f, h / 230f) * 0.88f
+            rotate(degrees = recoilRot, pivot = Offset(gripPivotX, gripPivotY)) {
+                // 1. Draw the authentic revolver gun
+                translate(left = startX, top = startY) {
+                    with(gunPainter) {
+                        draw(size = Size(renderW, renderH))
+                    }
 
-                // In 512x512, barrel points to X=460. By flipping X (scaleX = -1),
-                // the barrel points to the LEFT (muzzle at left, cylinder and grip at right).
-                translate(left = cx - 256f * s, top = cy - 256f * s) {
-                    scale(scaleX = -s, scaleY = s, pivot = Offset(256f, 256f)) {
-                        // 1. Revolver Silhouette Shadow / Border for high contrast
-                        drawPath(
-                            path = revolverPath,
-                            color = Color(0xFF101318),
-                            style = Stroke(width = 5f)
-                        )
+                    // 2. Dynamic Cylinder Spin Flute Overlay
+                    if (cylinderAngle % 360f != 0f) {
+                        val cylLeft = renderW * (510f / 1200f)
+                        val cylTop = renderH * (145f / 812f)
+                        val cylW = renderW * (230f / 1200f)
+                        val cylH = renderH * (205f / 812f)
 
-                        // 2. Revolver Body Solid Fill (Gunmetal Tactical Steel)
-                        drawPath(
-                            path = revolverPath,
-                            color = Color(0xFFB0BEC5)
-                        )
-
-                        // 3. Cylinder Spin Animation Overlay
-                        // Cylinder region in 512x512 space: center approx (240, 200)
-                        if (cylinderAngle % 360f != 0f) {
-                            val cylCenter = Offset(230f, 215f)
-                            rotate(degrees = cylinderAngle, pivot = cylCenter) {
-                                drawCircle(
-                                    color = Color(0xFF78909C).copy(alpha = 0.45f),
-                                    radius = 38f,
-                                    center = cylCenter
-                                )
-                                drawCircle(
-                                    color = Color(0xFF37474F),
-                                    radius = 6f,
-                                    center = cylCenter
+                        // Draw moving cylindrical flutes reflection as cylinder turns
+                        val rad = cylinderAngle * (PI.toFloat() / 180f)
+                        for (i in 0 until 4) {
+                            val phase = rad + i * (PI.toFloat() / 2f)
+                            val sinP = sin(phase)
+                            val cosP = cos(phase)
+                            if (cosP > 0f) {
+                                val fluteY = cylTop + cylH / 2f + sinP * (cylH * 0.38f)
+                                drawRoundRect(
+                                    color = Color.White.copy(alpha = 0.28f * cosP),
+                                    topLeft = Offset(cylLeft + 12f * scale, fluteY - 4f * scale),
+                                    size = Size(cylW - 24f * scale, 8f * scale),
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f * scale)
                                 )
                             }
                         }
+                    }
 
-                        // 4. Muzzle Flash Burst at the barrel tip (X ≈ 470, Y ≈ 195 in unflipped space)
-                        if (muzzleFlash) {
-                            val tipX = 465f
-                            val tipY = 195f
+                    // 3. Muzzle Flash Burst at the Leftmost Muzzle Tip (x=62, y=137 in 1200x812)
+                    if (muzzleFlash) {
+                        val muzzleX = 62f * scale
+                        val muzzleY = 137f * scale
 
-                            val flash = Path().apply {
-                                moveTo(tipX, tipY)
-                                lineTo(tipX + 85f, tipY - 42f)
-                                lineTo(tipX + 50f, tipY - 14f)
-                                lineTo(tipX + 115f, tipY)
-                                lineTo(tipX + 50f, tipY + 14f)
-                                lineTo(tipX + 85f, tipY + 42f)
-                                close()
-                            }
-                            drawPath(flash, Color(0xFFFFD600))
-                            drawPath(flash, Color(0xFFFF6D00), style = Stroke(width = 3f))
-
-                            val inner = Path().apply {
-                                moveTo(tipX, tipY)
-                                lineTo(tipX + 45f, tipY - 18f)
-                                lineTo(tipX + 75f, tipY)
-                                lineTo(tipX + 45f, tipY + 18f)
-                                close()
-                            }
-                            drawPath(inner, Color.White)
+                        // Large multi-spiked explosive starburst erupting to the left
+                        val outerFlame = Path().apply {
+                            moveTo(muzzleX, muzzleY)
+                            lineTo(muzzleX - 95f * scale, muzzleY - 48f * scale)
+                            lineTo(muzzleX - 60f * scale, muzzleY - 18f * scale)
+                            lineTo(muzzleX - 130f * scale, muzzleY)
+                            lineTo(muzzleX - 60f * scale, muzzleY + 18f * scale)
+                            lineTo(muzzleX - 95f * scale, muzzleY + 48f * scale)
+                            close()
                         }
+                        drawPath(outerFlame, Color(0xFFFFD600))
+                        drawPath(outerFlame, Color(0xFFFF3D00), style = Stroke(width = 4f * scale))
+
+                        // Inner white-hot blazing core
+                        val innerFlame = Path().apply {
+                            moveTo(muzzleX, muzzleY)
+                            lineTo(muzzleX - 55f * scale, muzzleY - 22f * scale)
+                            lineTo(muzzleX - 90f * scale, muzzleY)
+                            lineTo(muzzleX - 55f * scale, muzzleY + 22f * scale)
+                            close()
+                        }
+                        drawPath(innerFlame, Color.White)
                     }
                 }
             }
         }
     }
 }
-
-private const val REVOLVER_SVG_D =
-    "M129.284 156.072a70.653 70.653 0 0 0-6.262-2.29c-1.569-.476-3.18-.932-4.853-1.302a62.484 62.484 0 0 0-5.097-.912 47.967 47.967 0 0 0-5.139-.381h-2.511c-.826 0-1.642.095-2.437.17a35.612 35.612 0 0 0-4.514.741 30.844 30.844 0 0 0-3.867 1.145c-1.176.392-2.194.9-3.094 1.292-.9.392-1.632.858-2.236 1.208l-1.844 1.176 2.12-.445c.678-.116 1.504-.212 2.426-.339.922-.127 1.981-.159 3.179-.116a27.38 27.38 0 0 1 3.613.254 30.643 30.643 0 0 1 3.9.773c.656.18 1.324.35 1.991.594.668.243 1.325.455 1.992.73a39.957 39.957 0 0 1 3.889 1.802c1.26.689 2.5 1.41 3.666 2.193 1.165.785 2.12 1.452 3.073 2.194a35.305 35.305 0 0 1 12.005-8.487zm287.25 39.543a7.417 7.417 0 0 1-7.417 7.417H304.781v-16.953h111.753zM99.5 207.365c-40.783 27.03-77.211 113.057-73.195 170.497h98.54s-17.907-71.384 6.675-94.885c.382-.36.784-.7 1.198-1.06 10.966-19.485 11.178-37.562.37-52.629-9.61-13.425-24.804-20.418-33.588-21.922zm-13.033 137.49a12.715 12.715 0 1 1-12.715-12.714 12.715 12.715 0 0 1 12.715 12.715zm395.857-210.579a2.808 2.808 0 0 1 3.677 2.68v32.17H304.813V143.77h148.096zM124.187 198.91h-.159a74.562 74.562 0 0 1 22.834 20.492c14.325 19.942 12.778 40.423 7.089 56.582 5.382.222 10.066 1.695 12.227 4.418a55.744 55.744 0 0 0 43.866 21.35c23.237 0 45.212-14.643 48.487-41.503a23.618 23.618 0 0 0 18.15-16.582l11.157-38.315V136.48H157.913v7.237h-11.051v25.843c-27.549.053-22.717 29.35-22.717 29.35zm130.338-38.515a8.477 8.477 0 0 1-8.476 8.476h-55.564a8.477 8.477 0 0 1 0-16.953h55.564a8.477 8.477 0 0 1 8.476 8.477zm0 24.37a8.477 8.477 0 0 1-8.476 8.476h-55.564a8.477 8.477 0 0 1 0-16.953h55.564a8.477 8.477 0 0 1 8.476 8.477zm-8.476 32.317h-55.564a8.477 8.477 0 1 1 0-16.953h55.564a8.477 8.477 0 0 1 0 16.953zm-71.076 43.442c0-14.124 8.476-15.321 20.767-14.95.265 1.282.562 2.606.922 3.963.434 1.578.9 3.178 1.483 4.8.583 1.62 1.23 3.178 1.94 4.8a48.062 48.062 0 0 0 2.415 4.556c.424.73.88 1.43 1.356 2.119.477.688.954 1.335 1.442 1.97a35.57 35.57 0 0 0 3.03 3.434 30.78 30.78 0 0 0 3.03 2.67c.954.784 1.929 1.377 2.734 1.928.805.551 1.6.932 2.214 1.25l1.982.943-1.505-1.557c-.455-.509-.985-1.155-1.578-1.876a17.971 17.971 0 0 1-1.76-2.585 27.348 27.348 0 0 1-1.705-3.179 30.632 30.632 0 0 1-1.42-3.719c-.201-.657-.403-1.314-.551-2.002-.148-.69-.329-1.367-.445-2.12a39.935 39.935 0 0 1-.54-4.238 43.98 43.98 0 0 1-.096-4.238c.042-1.378.127-2.787.254-4.122.085-.795.18-1.557.287-2.31h1.165c19.56 0 35.411-4.8 35.411 14.474a35.416 35.416 0 0 1-70.833-.021z"
