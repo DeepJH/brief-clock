@@ -1,4 +1,4 @@
-# Brief Clock (讲解时) - v0.1.3
+# Brief Clock (讲解时) - v0.1.5
 
 ## 免责声明 (Disclaimer)
 
@@ -12,11 +12,11 @@
 
 ## 版本概述 (Release Overview)
 
-Brief Clock (讲解时) 正式发布 **Brief Clock (讲解时)-v0.1.3**！本次版本带来了严谨真实的经典左轮手枪全配件重构（极简纯色、光滑转轮底鼓、凹槽动态回旋、后扳击锤、向后扣动弧形银色扳机与枪口上仰后坐力）、大号方锐微收感叹号与左右小号沙漏的黄金美术比例新图标、小睡滚轮初始定位 10s、彩蛋错过后需重新进入页面才可再次触发的严格生命周期、迷幻毒蘑菇风小游戏（白底、加粗不规则柔和色圈、加速涌出、表情渐显平滑飞出、置顶彩带与大号居中确认按钮）及无政治立场免责声明。
+Brief Clock (讲解时) 正式发布 **Brief Clock (讲解时)-v0.1.5**！本次版本带来了严谨真实的经典左轮手枪全配件重构（极简纯色、光滑转轮底鼓、凹槽动态回旋、后扳击锤、向后扣动弧形银色扳机与枪口上仰后坐力）、大号方锐微收感叹号与左右小号沙漏的黄金美术比例新图标、小睡滚轮初始定位 10s、彩蛋错过后需重新进入页面才可再次触发的严格生命周期、迷幻毒蘑菇风小游戏（白底、加粗不规则柔和色圈、加速涌出、表情渐显平滑飞出、置顶彩带与大号居中确认按钮）及无政治立场免责声明。
 
 ---
 
-## 核心更新内容 (Changelog v0.1.3)
+## 核心更新内容 (Changelog v0.1.5)
 
 ### 1. 经典左轮手枪极简纯色可动重构
 - **严正纠正枪械构造**：彻底排除任何套筒或弹匣概念，重构为配件齐全的纯正 2D 极简纯色左轮手枪。
@@ -47,8 +47,8 @@ Brief Clock (讲解时) 正式发布 **Brief Clock (讲解时)-v0.1.3**！本次
 - **庆祝礼花置顶于结果弹窗前**：倒计时归零终结枪响，漫天彩带礼花雨直接铺在弹窗前面，弹窗内配置大号居中“太棒了”确认按钮，确认后界面平滑合拢复原。
 
 ### 6. 版本信息
-- `versionCode`: `4`
-- `versionName`: `0.1.3`
+- `versionCode`: `6`
+- `versionName`: `0.1.5`
 
 ---
 
@@ -56,8 +56,8 @@ Brief Clock (讲解时) 正式发布 **Brief Clock (讲解时)-v0.1.3**！本次
 
 | 文件名 | 文件类型 | 大小 | SHA256 校验和 |
 |---|---|---|---|
-| `app/build/outputs/apk/debug/app-debug.apk` | Debug APK | ~11MB | `f1a93b67b07965f9ea3b093c40d80d415f19edf63325a034dae5bad376e4a69f` |
-| `app/build/outputs/apk/release/app-release-unsigned.apk` | Release APK | ~7.7MB | `854e7ac401ee992446108d784fa009d14869786f2e7be14714423602992e1212` |
+| `app/build/outputs/apk/debug/app-debug.apk` | Debug APK | ~11MB | `8e9ffc7eb983647b5c1ab4659817a4d4c752264ec62e30270f807918f154795a` |
+| `app/build/outputs/apk/release/app-release-unsigned.apk` | Release APK | ~7.7MB | `3f2607d3dff8bc0048a0e1e60f5fa429e6b7b887f0b7723c6ec888989d109416` |
 
 ---
 

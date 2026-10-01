@@ -47,7 +47,7 @@ Brief Clock (讲解时) 是一个现代、简洁且富有特色的 Android 智�
 ## 技术栈与工程架构
 
 - **应用名称**：Brief Clock (讲解时)
-- **最新版本**：v0.1.3 (versionCode: 4)
+- **最新版本**：v0.1.5 (versionCode: 6)
 - **UI 框架**：Jetpack Compose + Material Design 3
 - **开发语言**：Kotlin 2.0.20
 - **构建系统**：Gradle 9.5.1 + AGP 8.5.2
