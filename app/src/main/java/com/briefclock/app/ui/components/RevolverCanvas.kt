@@ -19,7 +19,7 @@ import kotlin.math.*
 
 /**
  * Authentic 2D Revolver Canvas Component.
- * Based on open-source classic revolver vector from Wikimedia Commons (CC BY-SA 3.0 / F l a n k e r).
+ * Based on classic revolver vector from Wikimedia Commons (CC BY-SA 3.0 / F l a n k e r).
  * Anatomically complete revolver:
  * - 6-chamber cylinder drum with flutes, swing yoke crane, and ejector rod.
  * - Thumb-cocking hammer, curved silver trigger, and textured grip handle.
@@ -61,9 +61,9 @@ fun RevolverCanvas(
         val gripPivotX = startX + renderW * 0.82f
         val gripPivotY = startY + renderH * 0.65f
 
-        val recoilRot = -recoilAmount * 16f // Clockwise rotation around right grip flips LEFT muzzle UPWARD!
-        val recoilTx = recoilAmount * 22f   // Kickback into hand
-        val recoilTy = -recoilAmount * 10f  // Upward lift
+        val recoilRot = recoilAmount * 16f // Clockwise rotation around right grip flips LEFT muzzle UPWARD!
+        val recoilTx = recoilAmount * 22f  // Kickback into hand
+        val recoilTy = -recoilAmount * 10f // Upward lift
 
         translate(left = recoilTx, top = recoilTy) {
             rotate(degrees = recoilRot, pivot = Offset(gripPivotX, gripPivotY)) {
@@ -73,32 +73,82 @@ fun RevolverCanvas(
                         draw(size = Size(renderW, renderH))
                     }
 
-                    // 2. Dynamic Cylinder Spin Flute Overlay
-                    if (cylinderAngle % 360f != 0f) {
-                        val cylLeft = renderW * (510f / 1200f)
-                        val cylTop = renderH * (145f / 812f)
-                        val cylW = renderW * (230f / 1200f)
-                        val cylH = renderH * (205f / 812f)
+                    // 2. Animated Hammer Cocking (Pivoting at hammer base x=760*scale, y=130*scale)
+                    val hammerPivotX = 760f * scale
+                    val hammerPivotY = 130f * scale
+                    val hammerAngle = if (hammerCocked) 28f else 0f
+                    rotate(degrees = hammerAngle, pivot = Offset(hammerPivotX, hammerPivotY)) {
+                        val hammerPath = Path().apply {
+                            moveTo(760f * scale, 130f * scale)
+                            lineTo(785f * scale, 85f * scale)
+                            lineTo(815f * scale, 75f * scale) // Spur
+                            lineTo(812f * scale, 86f * scale)
+                            lineTo(790f * scale, 105f * scale)
+                            lineTo(775f * scale, 135f * scale)
+                            close()
+                        }
+                        drawPath(hammerPath, Color(0xFF4B5563))
+                        drawPath(hammerPath, Color(0xFF1F2937), style = Stroke(width = 1.5f * scale))
+                    }
 
-                        // Draw moving cylindrical flutes reflection as cylinder turns
-                        val rad = cylinderAngle * (PI.toFloat() / 180f)
-                        for (i in 0 until 4) {
-                            val phase = rad + i * (PI.toFloat() / 2f)
-                            val sinP = sin(phase)
-                            val cosP = cos(phase)
-                            if (cosP > 0f) {
-                                val fluteY = cylTop + cylH / 2f + sinP * (cylH * 0.38f)
-                                drawRoundRect(
-                                    color = Color.White.copy(alpha = 0.28f * cosP),
-                                    topLeft = Offset(cylLeft + 12f * scale, fluteY - 4f * scale),
-                                    size = Size(cylW - 24f * scale, 8f * scale),
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f * scale)
-                                )
-                            }
+                    // 3. Animated Trigger Pull (Pivoting at x=675*scale, y=365*scale)
+                    val triggerPivotX = 675f * scale
+                    val triggerPivotY = 365f * scale
+                    val triggerAngle = if (triggerPulled) 18f else 0f
+                    rotate(degrees = triggerAngle, pivot = Offset(triggerPivotX, triggerPivotY)) {
+                        val triggerBlade = Path().apply {
+                            moveTo(675f * scale, 365f * scale)
+                            cubicTo(
+                                665f * scale, 390f * scale,
+                                660f * scale, 415f * scale,
+                                680f * scale, 435f * scale
+                            )
+                            lineTo(686f * scale, 430f * scale)
+                            cubicTo(
+                                670f * scale, 412f * scale,
+                                673f * scale, 390f * scale,
+                                683f * scale, 370f * scale
+                            )
+                            close()
+                        }
+                        drawPath(triggerBlade, Color(0xFFD1D5DB))
+                        drawPath(triggerBlade, Color(0xFF374151), style = Stroke(width = 1.2f * scale))
+                    }
+
+                    // 4. Dynamic 6-Flute Cylinder Rolling Animation (Flutes continuously rotate around drum)
+                    val cylLeft = renderW * (510f / 1200f)
+                    val cylTop = renderH * (145f / 812f)
+                    val cylW = renderW * (230f / 1200f)
+                    val cylH = renderH * (205f / 812f)
+                    val cylCenterY = cylTop + cylH / 2f
+
+                    val rad = cylinderAngle * (PI.toFloat() / 180f)
+                    for (i in 0 until 6) {
+                        val phase = rad + i * (2f * PI.toFloat() / 6f)
+                        val sinP = sin(phase)
+                        val cosP = cos(phase)
+                        if (cosP > 0f) {
+                            val fluteY = cylCenterY + sinP * (cylH * 0.40f)
+                            val fluteW = (cylW - 24f * scale)
+
+                            // Flute shadow groove
+                            drawRoundRect(
+                                color = Color(0xFF111827).copy(alpha = 0.65f * cosP),
+                                topLeft = Offset(cylLeft + 12f * scale, fluteY - 5f * scale),
+                                size = Size(fluteW, 10f * scale),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f * scale)
+                            )
+                            // Flute specular highlight
+                            drawRoundRect(
+                                color = Color.White.copy(alpha = 0.35f * cosP),
+                                topLeft = Offset(cylLeft + 14f * scale, fluteY - 3f * scale),
+                                size = Size(fluteW - 4f * scale, 3f * scale),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f * scale)
+                            )
                         }
                     }
 
-                    // 3. Muzzle Flash Burst at the Leftmost Muzzle Tip (x=62, y=137 in 1200x812)
+                    // 5. Muzzle Flash Burst at the Leftmost Muzzle Tip (x=62, y=137 in 1200x812)
                     if (muzzleFlash) {
                         val muzzleX = 62f * scale
                         val muzzleY = 137f * scale

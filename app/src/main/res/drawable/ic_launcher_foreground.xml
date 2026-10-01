@@ -5,41 +5,41 @@
     android:viewportWidth="512"
     android:viewportHeight="512">
 
-    <!-- Hourglass Bolder Struts -->
+    <!-- Hourglass Minimalist Straight Funnel Struts -->
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M146,166 L256,247 L256,265 L146,184 Z" />
+        android:pathData="M158,196 L256,251 L256,261 L158,206 Z" />
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M146,328 L256,247 L256,265 L146,346 Z" />
+        android:pathData="M158,306 L256,251 L256,261 L158,316 Z" />
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M366,166 L256,247 L256,265 L366,184 Z" />
+        android:pathData="M354,196 L256,251 L256,261 L354,206 Z" />
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M366,328 L256,247 L256,265 L366,346 Z" />
+        android:pathData="M354,306 L256,251 L256,261 L354,316 Z" />
 
-    <!-- Rectangular Caps: width 36, height 180 (166..346) -->
+    <!-- Hourglass Rectangular End Caps (Width 20, Height 120) -->
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M110,166 h36 v180 h-36 z" />
+        android:pathData="M138,196 h20 v120 h-20 z" />
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M366,166 h36 v180 h-36 z" />
+        android:pathData="M354,196 h20 v120 h-20 z" />
 
-    <!-- Clean 5px White Negative Space Mask -->
+    <!-- Clean White Negative Space Mask for Exclamation Mark (5px uniform gap) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M232,157 L280,157 L274,313 L238,313 Z" />
+        android:pathData="M228,155 L284,155 L277,325 L235,325 Z" />
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M240,317 h32 v32 h-32 z" />
+        android:pathData="M235,328 h42 v42 h-42 z" />
 
-    <!-- Proportional Exclamation Mark: Tapered Stem (38 -> 28) + 22x22 Sharp Square Dot -->
+    <!-- Big Bold Exclamation Mark (Hero of the Icon) -->
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M237,162 L275,162 L269,308 L243,308 Z" />
+        android:pathData="M233,160 L279,160 L272,320 L240,320 Z" />
     <path
         android:fillColor="#1D4ED8"
-        android:pathData="M245,322 h22 v22 h-22 z" />
+        android:pathData="M241,334 h30 v30 h-30 z" />
 </vector>

@@ -92,6 +92,7 @@ fun NapRouletteScreen(
     // Easter Egg Tap Tracking: 10 taps in 10s spawns 💤
     val revolverTaps = remember { mutableStateListOf<Long>() }
     var isZzzVisible by remember { mutableStateOf(false) }
+    var hasMissedEggInSession by remember { mutableStateOf(false) }
     var zzzXFraction by remember { mutableFloatStateOf(0.5f) }
     var zzzYFraction by remember { mutableFloatStateOf(0.4f) }
     var zzzBounds by remember { mutableStateOf<Rect?>(null) }
@@ -144,8 +145,9 @@ fun NapRouletteScreen(
                                                 isEasterEggActive = true
                                             }
                                         } else {
-                                            // Clicked outside 💤 -> Hide 💤, do NOT consume, let click pass to children!
+                                            // Clicked outside 💤 -> Hide 💤, mark missed for session!
                                             isZzzVisible = false
+                                            hasMissedEggInSession = true
                                         }
                                     }
                                 }
@@ -218,7 +220,7 @@ fun NapRouletteScreen(
                                     // Easter egg tap counter (10 taps in 10s)
                                     revolverTaps.removeAll { now - it > 10000L }
                                     revolverTaps.add(now)
-                                    if (revolverTaps.size >= 10 && !isZzzVisible && !isEasterEggActive) {
+                                    if (revolverTaps.size >= 10 && !isZzzVisible && !isEasterEggActive && !hasMissedEggInSession) {
                                         isZzzVisible = true
                                         zzzXFraction = Random.nextFloat() * 0.65f + 0.15f
                                         zzzYFraction = Random.nextFloat() * 0.45f + 0.25f
