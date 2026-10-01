@@ -60,10 +60,10 @@ fun VerticalDurationWheelPicker(
 
     val initialIndex = remember(options, selectedSeconds) {
         val idx = options.indexOfFirst { it.seconds == selectedSeconds }
-        if (idx >= 0) idx else 15 // Default ~15m
+        if (idx >= 0) idx else 0 // Default ~15m
     }
 
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (initialIndex - 1).coerceAtLeast(0))
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 0)
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
 
     // Detect center item

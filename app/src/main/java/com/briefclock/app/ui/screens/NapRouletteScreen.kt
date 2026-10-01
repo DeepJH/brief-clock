@@ -471,41 +471,52 @@ fun NapRouletteScreen(
                     }
                 }
 
-                // Easter Egg Floating 💤 Trigger
+                // Easter Egg Floating 💤 Trigger with Full-Screen Tap Interceptor
                 if (isZzzVisible) {
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val posX = maxWidth * zzzXFraction
-                        val posY = maxHeight * zzzYFraction
-
-                        val infiniteFloat = rememberInfiniteTransition(label = "zzzFloat")
-                        val zzzScale by infiniteFloat.animateFloat(
-                            initialValue = 1f,
-                            targetValue = 1.35f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(600, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "scale"
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .offset(x = posX, y = posY)
-                                .scale(zzzScale)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f))
-                                .clickable {
-                                    SoundEffects.playCylinderSpin(context)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectTapGestures {
+                                    // User tapped anywhere outside 💤 -> hide it immediately!
                                     isZzzVisible = false
-                                    splitCurtainOpen = true
-                                    coroutineScope.launch {
-                                        delay(400)
-                                        isEasterEggActive = true
-                                    }
                                 }
-                                .padding(10.dp)
-                        ) {
-                            Text(text = "💤", fontSize = 28.sp)
+                            }
+                    ) {
+                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                            val posX = maxWidth * zzzXFraction
+                            val posY = maxHeight * zzzYFraction
+
+                            val infiniteFloat = rememberInfiniteTransition(label = "zzzFloat")
+                            val zzzScale by infiniteFloat.animateFloat(
+                                initialValue = 1f,
+                                targetValue = 1.35f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(600, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "scale"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .offset(x = posX, y = posY)
+                                    .scale(zzzScale)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f))
+                                    .clickable {
+                                        SoundEffects.playCylinderSpin(context)
+                                        isZzzVisible = false
+                                        splitCurtainOpen = true
+                                        coroutineScope.launch {
+                                            delay(400)
+                                            isEasterEggActive = true
+                                        }
+                                    }
+                                    .padding(12.dp)
+                            ) {
+                                Text(text = "💤", fontSize = 30.sp)
+                            }
                         }
                     }
                 }

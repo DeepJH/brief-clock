@@ -1,13 +1,9 @@
 package com.briefclock.app.ui.screens
 
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -74,29 +71,29 @@ fun EasterEggGameScreen(
         }
         isGameOver = true
 
-        // Play end gunshot sound and spawn confetti
+        // Play end gunshot sound and record best score
         SoundEffects.playGunshot(context)
         if (score > bestScore) {
             bestScore = score
             prefs.edit().putInt("key_best_egg_score", bestScore).apply()
         }
 
-        // Spawn confetti fireworks
+        // Spawn confetti fireworks in front
         val colors = listOf(
             Color(0xFFFF5722), Color(0xFFFFEB3B), Color(0xFF4CAF50),
             Color(0xFF2196F3), Color(0xFFE91E63), Color(0xFF9C27B0)
         )
-        for (i in 0..120) {
+        for (i in 0..150) {
             val angle = Random.nextFloat() * 2f * PI.toFloat()
-            val speed = Random.nextFloat() * 12f + 4f
+            val speed = Random.nextFloat() * 14f + 5f
             confettiList.add(
                 ConfettiParticle(
                     x = 0.5f,
-                    y = 0.4f,
+                    y = 0.35f,
                     vx = cos(angle) * speed,
-                    vy = sin(angle) * speed - 5f,
+                    vy = sin(angle) * speed - 6f,
                     color = colors.random(),
-                    size = Random.nextFloat() * 8f + 4f
+                    size = Random.nextFloat() * 9f + 4f
                 )
             )
         }
@@ -109,7 +106,7 @@ fun EasterEggGameScreen(
             while (!isGameOver) {
                 delay(220)
                 val angle = Random.nextFloat() * 2f * PI.toFloat()
-                val speed = Random.nextFloat() * 180f + 120f
+                val speed = Random.nextFloat() * 160f + 110f
                 emojisList.add(
                     FlyingEmoji(
                         id = nextEmojiId++,
@@ -120,20 +117,23 @@ fun EasterEggGameScreen(
                     )
                 )
 
-                // Remove emojis that traveled too far (>3.5s)
+                // Clean up emojis that traveled out of screen bounds (>3.5s)
                 val now = System.currentTimeMillis()
                 emojisList.removeAll { now - it.spawnTime > 3500L || it.isHit }
             }
         }
     }
 
-    // Infinite Warp Tunnel Animation
+    // Dynamic Warp Tunnel Speed (Starts slow, gets faster over the 10 seconds)
+    val elapsedProgress = (10 - timeLeftSec) / 10f
+    val baseDurationMs = (1400 - elapsedProgress * 800).toInt().coerceAtLeast(400)
+
     val infiniteTransition = rememberInfiniteTransition(label = "warpTunnel")
     val warpPhase by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
+            animation = tween(baseDurationMs, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "phase"
@@ -142,7 +142,7 @@ fun EasterEggGameScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF080B10))
+            .background(Color.White) // Initial background is pure white
             .pointerInput(isGameOver) {
                 if (!isGameOver) {
                     detectTapGestures { tapOffset ->
@@ -153,18 +153,16 @@ fun EasterEggGameScreen(
                         val cy = h / 2f
 
                         // Check if an emoji was tapped
-                        var hitAny = false
                         for (emoji in emojisList) {
                             if (emoji.isHit) continue
                             val elapsed = (now - emoji.spawnTime) / 1000f
                             val dist = emoji.speed * elapsed
                             val ex = cx + cos(emoji.angle) * dist
                             val ey = cy + sin(emoji.angle) * dist
-                            val touchRadius = 45.dp.toPx()
+                            val touchRadius = 48.dp.toPx()
 
                             if (hypot(tapOffset.x - ex, tapOffset.y - ey) <= touchRadius) {
                                 emoji.isHit = true
-                                hitAny = true
                                 score++
                                 SoundEffects.playGunshot(context)
                                 break
@@ -174,21 +172,28 @@ fun EasterEggGameScreen(
                 }
             }
     ) {
-        // Warp Tunnel Canvas Background (Expanding concentric rings from center)
+        // 1. Soft Blurred Colored Rings Surging Outward from Center (Starts slow, gets faster)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
             val cy = size.height / 2f
-            val maxR = hypot(cx, cy) * 1.1f
+            val maxR = hypot(cx, cy) * 1.15f
 
-            val ringCount = 8
+            val ringCount = 7
+            val ringColors = listOf(
+                Color(0xFF93C5FD), // Soft baby blue
+                Color(0xFFC4B5FD), // Soft lavender
+                Color(0xFFFBCFE8), // Soft pastel pink
+                Color(0xFFA7F3D0)  // Soft mint
+            )
+
             for (r in 0 until ringCount) {
                 val progress = (warpPhase + r.toFloat() / ringCount) % 1f
-                val radius = (progress * progress) * maxR // exponential perspective
+                val radius = (progress * progress) * maxR
                 val alpha = (sin(progress * PI.toFloat())).coerceIn(0f, 1f) * 0.45f
-                val strokeWidth = (progress * 14f + 2f)
+                val strokeWidth = (progress * 22f + 4f)
 
                 drawCircle(
-                    color = Color(0xFF64748B).copy(alpha = alpha),
+                    color = ringColors[r % ringColors.size].copy(alpha = alpha),
                     radius = radius,
                     center = Offset(cx, cy),
                     style = Stroke(width = strokeWidth)
@@ -196,7 +201,7 @@ fun EasterEggGameScreen(
             }
         }
 
-        // Flying Emojis
+        // 2. Flying Emojis (Smooth transition from 0% transparent to 100% visible while moving outward)
         val now = System.currentTimeMillis()
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val cx = maxWidth / 2
@@ -208,20 +213,24 @@ fun EasterEggGameScreen(
                     val distDp = (emoji.speed * elapsed).dp
                     val ex = cx + (distDp.value * cos(emoji.angle)).dp
                     val ey = cy + (distDp.value * sin(emoji.angle)).dp
-                    val scaleFactor = (0.7f + elapsed * 0.9f).coerceIn(0.6f, 2.8f)
-                    val fontSize = (24 * scaleFactor).sp
+
+                    // Alpha transitions from 0.0 (completely transparent at center) to 1.0 (fully visible)
+                    val alpha = (elapsed / 0.55f).coerceIn(0f, 1f)
+                    val scaleFactor = (0.6f + elapsed * 1.0f).coerceIn(0.6f, 2.6f)
+                    val fontSize = (26 * scaleFactor).sp
 
                     Text(
                         text = emoji.emoji,
                         fontSize = fontSize,
                         modifier = Modifier
                             .offset(x = ex - (fontSize.value / 2).dp, y = ey - (fontSize.value / 2).dp)
+                            .alpha(alpha)
                     )
                 }
             }
         }
 
-        // Confetti Fireworks Layer when game ends
+        // 3. Confetti Fireworks Layer IN FRONT
         if (isGameOver && confettiList.isNotEmpty()) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
@@ -229,7 +238,7 @@ fun EasterEggGameScreen(
                 confettiList.forEach { p ->
                     p.x += p.vx / w
                     p.y += p.vy / h
-                    p.vy += 0.2f // gravity
+                    p.vy += 0.22f // Gravity pull
                     drawCircle(
                         color = p.color,
                         radius = p.size,
@@ -239,7 +248,7 @@ fun EasterEggGameScreen(
             }
         }
 
-        // Top HUD Bar: Countdown & Score Counter
+        // 4. Top HUD Bar: Countdown & Hit Counter
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -251,72 +260,92 @@ fun EasterEggGameScreen(
             Surface(
                 shape = RoundedCornerShape(percent = 50),
                 color = MaterialTheme.colorScheme.primaryContainer,
-                tonalElevation = 4.dp
+                shadowElevation = 4.dp
             ) {
                 Text(
                     text = "🎯 击中: $score",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                 )
             }
 
             Surface(
                 shape = RoundedCornerShape(percent = 50),
                 color = if (timeLeftSec <= 3) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 4.dp
+                shadowElevation = 4.dp
             ) {
                 Text(
                     text = "⏳ ${timeLeftSec}s",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (timeLeftSec <= 3) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
                 )
             }
         }
 
-        // Game Over Dialog
+        // 5. Game Over Celebration Dialog with Centered BIG Button
         if (isGameOver) {
             AlertDialog(
                 onDismissRequest = onDismissGame,
+                shape = RoundedCornerShape(24.dp),
                 title = {
-                    Text(
-                        text = "🎉 " + stringResource(R.string.easter_egg_result_title),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "🎉 " + stringResource(R.string.easter_egg_result_title),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 },
                 text = {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
                     ) {
                         Text(
                             text = String.format(stringResource(R.string.easter_egg_score), score),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = String.format(stringResource(R.string.easter_egg_best), bestScore),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 confirmButton = {
-                    Button(
-                        onClick = onDismissGame,
-                        shape = RoundedCornerShape(12.dp)
+                    // Big centered confirm button ("太棒了")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = stringResource(R.string.easter_egg_confirm),
-                            fontWeight = FontWeight.Bold
-                        )
+                        Button(
+                            onClick = onDismissGame,
+                            shape = RoundedCornerShape(percent = 50),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .height(54.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.easter_egg_confirm),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                 }
             )

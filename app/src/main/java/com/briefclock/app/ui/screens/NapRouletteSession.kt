@@ -8,8 +8,8 @@ import androidx.compose.runtime.setValue
 
 class NapRouletteSession {
     var gameState by mutableStateOf(RouletteState.IDLE)
-    var targetDurationSec by mutableIntStateOf(20 * 60)
-    var selectedChipSec by mutableIntStateOf(20 * 60)
+    var targetDurationSec by mutableIntStateOf(10)
+    var selectedChipSec by mutableIntStateOf(10)
     var startTimeMs by mutableLongStateOf(0L)
     var elapsedSec by mutableIntStateOf(0)
     var lastResultSuccess by mutableStateOf(false)
