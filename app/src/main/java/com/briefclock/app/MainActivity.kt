@@ -125,7 +125,7 @@ class MainActivity : ComponentActivity() {
                                     onClick = { selectedTab = BottomTab.ROULETTE },
                                     icon = {
                                         Icon(
-                                            AppIcons.Revolver,
+                                            painter = painterResource(R.drawable.ic_nav_revolver),
                                             contentDescription = stringResource(R.string.nav_roulette),
                                             modifier = Modifier.size(24.dp)
                                         )

@@ -42,7 +42,7 @@ fun RevolverCanvas(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(230.dp)
+            .height(300.dp)
     ) {
         val w = size.width
         val h = size.height
@@ -50,7 +50,7 @@ fun RevolverCanvas(
         // Native coordinate frame: 1200 x 750
         val imgW = 1200f
         val imgH = 750f
-        val scale = min((w * 0.94f) / imgW, (h * 0.94f) / imgH)
+        val scale = min((w * 0.96f) / imgW, (h * 0.96f) / imgH)
         val renderW = imgW * scale
         val renderH = imgH * scale
 
@@ -72,21 +72,24 @@ fun RevolverCanvas(
                 translate(left = startX, top = startY) {
                     val layerSize = Size(renderW, renderH)
 
-                    // 1. Hammer Layer (Pivoting at base x=808*scale, y=194*scale)
-                    val hammerPivotX = 808f * scale
-                    val hammerPivotY = 194f * scale
-                    val hammerAngle = if (hammerCocked) 22f else 0f
+                    // 1. Hammer Layer (Pivoting at base x=800*scale, y=205*scale)
+                    // Rest angle is 0f (rotated counter-clockwise into resting uncocked position).
+                    // Cocked angle is +20f (spurs back into cocked position).
+                    val hammerPivotX = 800f * scale
+                    val hammerPivotY = 205f * scale
+                    val hammerAngle = if (hammerCocked) 20f else 0f
                     rotate(degrees = hammerAngle, pivot = Offset(hammerPivotX, hammerPivotY)) {
                         with(hammerPainter) {
                             draw(size = layerSize)
                         }
                     }
 
-                    // 2. Trigger Layer (Pivoting at top x=580*scale, y=275*scale, pulls back towards grip)
-                    // Note: Rotating counter-clockwise (-16f) pulls trigger tip towards the grip (to the right)
+                    // 2. Trigger Layer (Pivoting at top x=580*scale, y=265*scale)
+                    // The trigger is anatomically correct (concave front welcoming finger, convex rear).
+                    // Pulling rotates it counter-clockwise (-14f) back towards the grip.
                     val triggerPivotX = 580f * scale
-                    val triggerPivotY = 275f * scale
-                    val triggerAngle = if (triggerPulled) -16f else 0f
+                    val triggerPivotY = 265f * scale
+                    val triggerAngle = if (triggerPulled) -14f else 0f
                     rotate(degrees = triggerAngle, pivot = Offset(triggerPivotX, triggerPivotY)) {
                         with(triggerPainter) {
                             draw(size = layerSize)

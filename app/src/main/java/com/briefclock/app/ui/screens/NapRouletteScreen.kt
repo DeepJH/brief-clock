@@ -282,9 +282,9 @@ fun NapRouletteScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
-                            // 1-Minute Increment Wheel Picker (10s test + 1m..60m)
+                            // 1-Minute Increment Wheel Picker (10s test + 1m..60m, scaled to 80%)
                             VerticalDurationWheelPicker(
                                 options = napOptions,
                                 selectedSeconds = session.targetDurationSec,
@@ -292,12 +292,12 @@ fun NapRouletteScreen(
                                     session.targetDurationSec = sec
                                     session.selectedChipSec = sec
                                 },
-                                modifier = Modifier.padding(vertical = 4.dp)
+                                modifier = Modifier.padding(vertical = 2.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            // Start Gamble Button ("开赌！")
+                            // Start Gamble Button ("开赌！", scaled to 80%)
                             Button(
                                 onClick = {
                                     coroutineScope.launch {
@@ -320,14 +320,14 @@ fun NapRouletteScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                 shape = RoundedCornerShape(percent = 50),
                                 modifier = Modifier
-                                    .fillMaxWidth(0.85f)
-                                    .height(54.dp)
+                                    .fillMaxWidth(0.82f)
+                                    .height(46.dp)
                             ) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = stringResource(R.string.roulette_start),
-                                    fontSize = 18.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
@@ -340,7 +340,7 @@ fun NapRouletteScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(260.dp),
+                                    .height(210.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Button(

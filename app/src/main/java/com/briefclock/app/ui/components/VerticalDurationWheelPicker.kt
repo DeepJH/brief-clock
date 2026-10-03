@@ -54,7 +54,7 @@ fun VerticalDurationWheelPicker(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val itemHeight = 44.dp
+    val itemHeight = 35.dp
     val visibleItemsCount = 3
     val totalHeight = itemHeight * visibleItemsCount
 
@@ -107,7 +107,7 @@ fun VerticalDurationWheelPicker(
             modifier = Modifier
                 .fillMaxWidth(0.55f)
                 .height(itemHeight)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f))
         )
 
@@ -129,7 +129,7 @@ fun VerticalDurationWheelPicker(
                 ) {
                     Text(
                         text = option.label,
-                        fontSize = if (isSelected) 20.sp else 15.sp,
+                        fontSize = if (isSelected) 16.sp else 12.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) {
                             MaterialTheme.colorScheme.primary

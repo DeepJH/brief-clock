@@ -62,6 +62,7 @@ fun EasterEggGameScreen(
     val emojis = remember { mutableStateListOf<ActiveFlyingEmoji>() }
     var nextEmojiId by remember { mutableLongStateOf(0L) }
     val confettiList = remember { mutableStateListOf<ConfettiParticle>() }
+    var confettiAnimTick by remember { mutableLongStateOf(0L) }
 
     // Psychedelic warp wave animation phase
     var ringPhase by remember { mutableFloatStateOf(0f) }
@@ -103,7 +104,7 @@ fun EasterEggGameScreen(
                 spawnTimer = 0f
                 val candidateEmojis = listOf("😴", "💤", "🛌")
                 val angle = Random.nextFloat() * 2f * PI.toFloat()
-                val speed = (Random.nextFloat() * 160f + 120f) * (1f + progress * 0.5f)
+                val speed = (Random.nextFloat() * 160f + 120f) * (1f + progress * 0.5f) * 0.5f
                 val fadeDur = Random.nextFloat() * 0.3f + 0.15f // 0.15s - 0.45s smooth fade
 
                 emojis.add(
@@ -166,7 +167,9 @@ fun EasterEggGameScreen(
                 p.x += p.vx / 380f
                 p.y += p.vy / 750f
                 p.vy += 0.28f // gravity
+                p.vx *= 0.99f // air resistance
             }
+            confettiAnimTick++
         }
     }
 
@@ -338,15 +341,17 @@ fun EasterEggGameScreen(
                     ) {
                         Text(
                             text = "🎉 " + stringResource(R.string.easter_egg_result_title),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = String.format(stringResource(R.string.easter_egg_score), score),
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Black,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -379,15 +384,18 @@ fun EasterEggGameScreen(
 
             // Confetti Fireworks Layer explicitly rendered IN FRONT OF the Dialog card!
             if (confettiList.isNotEmpty()) {
+                val tick = confettiAnimTick // Subscribes Canvas to every animation tick at 60 FPS
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val w = size.width
                     val h = size.height
                     confettiList.forEach { p ->
-                        drawCircle(
-                            color = p.color,
-                            radius = p.size,
-                            center = Offset(p.x * w, p.y * h)
-                        )
+                        if (p.y in -0.1f..1.15f && p.x in -0.1f..1.15f) {
+                            drawCircle(
+                                color = p.color,
+                                radius = p.size,
+                                center = Offset(p.x * w, p.y * h)
+                            )
+                        }
                     }
                 }
             }
